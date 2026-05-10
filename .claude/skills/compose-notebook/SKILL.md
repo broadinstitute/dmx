@@ -84,3 +84,14 @@ another notebook executes that notebook's setup block.
   Always run `marimo export session --sandbox` **after** the final source
   edit / formatter pass, and commit the refreshed `.json` files in the same
   change that touched the `.py` files.
+- Wrap altair charts in `mo.ui.altair_chart(...)` or molab will not render
+  them. A bare `chart` expression emits the raw vega-lite spec as
+  `application/vnd.vegalite.v6+json`, which expects the viewer to ship a
+  vega-lite renderer. The marimo live editor does; molab's static viewer
+  does not bundle vega-lite v6, so the cell paints blank even though the
+  spec is fully present in the snapshot. Wrapping in
+  `mo.ui.altair_chart(chart)` flips the output to `text/html` containing a
+  `<marimo-vega>` custom element, and the marimo runtime that molab *does*
+  load brings its own vega renderer with it. Same general rule for other
+  third-party mimetypes: marimo widgets carry their renderer with them;
+  raw mimetypes depend on the viewer.
