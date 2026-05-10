@@ -4,7 +4,6 @@
 #     "altair==5.5.0",
 #     "marimo",
 #     "polars==1.40.1",
-#     "python-dotenv==1.2.1",
 #     "requests==2.32.5",
 # ]
 # ///

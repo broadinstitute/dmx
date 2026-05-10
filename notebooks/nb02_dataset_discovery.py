@@ -3,7 +3,6 @@
 # dependencies = [
 #     "marimo",
 #     "polars==1.40.1",
-#     "python-dotenv==1.2.1",
 #     "requests==2.32.5",
 # ]
 # ///
@@ -14,27 +13,11 @@ __generated_with = "0.23.5"
 app = marimo.App(width="medium")
 
 with app.setup:
-    import os
-    from pathlib import Path
-
     import marimo as mo
     import polars as pl
     import requests
-    from dotenv import load_dotenv
 
-    NOTEBOOK_DIR = Path(__file__).parent
-    PROJ_ROOT = NOTEBOOK_DIR.parent
-    load_dotenv(PROJ_ROOT / ".env")
-    load_dotenv(PROJ_ROOT.parent / "jx" / ".env")
-    BASE_URL = os.environ.get("BREADBOX_BASE_URL", "https://depmap.org/portal/breadbox")
-    DEPMAP_MCP_TOKEN = os.environ.get("DEPMAP_MCP_TOKEN")
-    API_PROXY_USERNAME = os.environ.get("API_PROXY_USERNAME", "depmap-mcp-server")
-    API_PROXY_PASSWORD = os.environ.get("API_PROXY_PASSWORD")
-    BREADBOX_AUTH_PUBLIC = os.environ.get("BREADBOX_AUTH_PUBLIC", "").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    BASE_URL = "https://depmap.org/portal/breadbox"
 
 
 @app.cell(hide_code=True)
@@ -53,26 +36,10 @@ def _():
 @app.function
 def breadbox_headers() -> dict[str, str]:
     """Return headers for Breadbox requests."""
-    headers = {
+    return {
         "Accept": "application/json",
         "User-Agent": "dmx/0.1 (+https://github.com/broadinstitute/dmx)",
     }
-    use_public_base = "depmap.org/portal/breadbox" in BASE_URL
-    if (
-        DEPMAP_MCP_TOKEN
-        and not API_PROXY_PASSWORD
-        and (BREADBOX_AUTH_PUBLIC or not use_public_base)
-    ):
-        headers["Authorization"] = f"Bearer {DEPMAP_MCP_TOKEN}"
-    return headers
-
-
-@app.function
-def breadbox_auth() -> tuple[str, str] | None:
-    """Return Basic auth credentials for the Breadbox proxy, if configured."""
-    if API_PROXY_PASSWORD:
-        return (API_PROXY_USERNAME, API_PROXY_PASSWORD)
-    return None
 
 
 @app.function
@@ -88,7 +55,6 @@ def bb_get(endpoint: str, params: dict | None = None) -> object:
         breadbox_url(endpoint),
         params=params,
         headers=breadbox_headers(),
-        auth=breadbox_auth(),
         timeout=60,
     )
     response.raise_for_status()
@@ -102,7 +68,6 @@ def bb_post(endpoint: str, body: dict) -> object:
         breadbox_url(endpoint),
         json=body,
         headers=breadbox_headers(),
-        auth=breadbox_auth(),
         timeout=120,
     )
     response.raise_for_status()

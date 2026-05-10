@@ -22,7 +22,6 @@ If you prefer to run setup by hand:
 
 ```bash
 uv --version
-cp .env.example .env  # optional; public Breadbox reads usually work without auth
 npx skills add marimo-team/skills -g --agent codex -y
 npx skills add marimo-team/marimo-pair -g --agent codex -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
@@ -30,7 +29,7 @@ uvx marimo edit --sandbox notebooks/nb01_orientation.py
 
 ## What this is for
 
-DepMap combines genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata. Breadbox gives a stable programmatic API for common moves: find datasets, search genes and compounds, retrieve matrix values, define model contexts, run two-class comparisons, and inspect precomputed associations. By default dmx targets the public Breadbox API at `https://depmap.org/portal/breadbox`; override with `BREADBOX_BASE_URL` if needed. `DEPMAP_MCP_TOKEN` and `API_PROXY_PASSWORD` are optional fallbacks for authenticated gateways.
+DepMap combines genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata. Breadbox gives a stable programmatic API for common moves: find datasets, search genes and compounds, retrieve matrix values, define model contexts, run two-class comparisons, and inspect precomputed associations. By default dmx targets the public Breadbox API at `https://depmap.org/portal/breadbox`, which does not require an API key for these read-only examples.
 
 dmx is the catalog version of those moves. The first goal is simple but useful: given a gene, find cancer contexts where its dependency is selective, annotate the relevant cell lines, and surface correlated genomic or drug features as follow-up hypotheses.
 
