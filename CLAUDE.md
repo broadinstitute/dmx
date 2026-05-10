@@ -1,35 +1,4 @@
 # CLAUDE.md - dmx
 
-Project-specific guidance for Codex working in this repository. This is the public, runnable catalog of marimo notebooks for DepMap Breadbox analysis.
-
-`README.md` is the human entry point. The two skills under `.claude/skills/` are the agent entry points: `getting-started` for first-run setup, `compose-notebook` for adding a new analysis.
-
-## Validation Rule
-
-After composing or editing any notebook in `notebooks/`, launch it in a marimo sandbox kernel and run all cells before reporting the task complete. Static checks do not catch wrong endpoints, empty tables, stale API assumptions, or broken plots.
-
-Minimal launch:
-
-```bash
-PORT=$(python -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1])")
-env -u PYTHONPATH uvx marimo edit --sandbox --headless --no-token --port $PORT notebooks/nbNN_*.py
-```
-
-## Architecture
-
-- Catalog over library. Helpers live as `@app.function` cells in numbered notebooks. Later notebooks import from earlier notebooks by adding `notebooks/` to `sys.path`.
-- Breadbox direct, no MCP. Public Breadbox reads need no auth, and the existing DepMap MCP tools are thin wrappers around the same REST endpoints.
-- Keep helpers close to API primitives: `requests`, `polars`, and small parsing functions.
-- Raw API responses should be summarized before printing. Association and matrix endpoints can produce large payloads.
-- Do not add a Python package until repeated cross-notebook imports make the notebook-as-library pattern painful.
-
-## When the Question Fits the Catalog
-
-Almost every first DepMap request should compose existing helpers:
-
-- "What datasets exist?" -> `nb02_dataset_discovery`
-- "Show KRAS dependency by lineage" -> `nb03_gene_dependency_profile`
-- "Is gene X selective in KRAS-mutant lung?" -> `nb04_context_comparison`
-- "What correlates with gene X dependency?" -> `nb05_association_query`
-
-Read `.claude/skills/compose-notebook/SKILL.md` before writing new analysis code.
+See `AGENTS.md` for the shared project guidance. This file exists so Claude
+Code discovers the same contract without duplicating it.

@@ -22,8 +22,9 @@ If you prefer to run setup by hand:
 
 ```bash
 uv --version
-npx skills add marimo-team/skills -g --agent codex -y
-npx skills add marimo-team/marimo-pair -g --agent codex -y
+AGENT=codex  # or: claude-code
+npx skills add marimo-team/skills -g --agent "$AGENT" -y
+npx skills add marimo-team/marimo-pair -g --agent "$AGENT" -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
 ```
 

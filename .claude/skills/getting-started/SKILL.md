@@ -25,13 +25,15 @@ Then have them source their shell profile or open a new terminal. Re-check
 
 ### 2. Install marimo skills
 
-Install the upstream marimo authoring and live-kernel skills globally:
+Install the upstream marimo authoring and live-kernel skills globally for the
+user's current agent (`codex` or `claude-code`):
 
-    npx skills add marimo-team/skills -g --agent codex -y
-    npx skills add marimo-team/marimo-pair -g --agent codex -y
+    AGENT=codex  # or: claude-code
+    npx skills add marimo-team/skills -g --agent "$AGENT" -y
+    npx skills add marimo-team/marimo-pair -g --agent "$AGENT" -y
 
 If the session cannot see marimo-pair after install, ask the user to restart
-Codex and run `getting-started` again.
+the agent and run `getting-started` again.
 
 ### 3. Launch the orientation notebook
 
