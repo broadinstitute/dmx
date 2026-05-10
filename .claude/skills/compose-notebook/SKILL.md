@@ -76,3 +76,11 @@ another notebook executes that notebook's setup block.
   before plotting.
 - Context expressions use JSON-logic syntax. Start with simple lineage or
   mutation+lineage contexts before composing more elaborate filters.
+- Molab session snapshots are matched by `code_hash`, not by position. Each
+  cell in `notebooks/__marimo__/session/*.json` carries the hash of the cell
+  source it was generated from; molab attaches the stored output to a source
+  cell only if the hashes match, otherwise that cell renders empty in the
+  public preview. A whitespace-only `ruff format` pass shifts every hash.
+  Always run `marimo export session --sandbox` **after** the final source
+  edit / formatter pass, and commit the refreshed `.json` files in the same
+  change that touched the `.py` files.
