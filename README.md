@@ -6,11 +6,15 @@ The pattern mirrors [jx](https://github.com/broadinstitute/jx), [fgx](https://gi
 
 ## The catalog
 
-- `notebooks/nb01_orientation.py` - landing page: what Breadbox exposes and what questions this catalog should answer first
-- `notebooks/nb02_dataset_discovery.py` - Breadbox primitives: `bb_get`, `bb_post`, dataset discovery, dimension search, and feature listing
-- `notebooks/nb03_gene_dependency_profile.py` - gene -> Chronos dependency profile across cell lines, joined to model metadata
-- `notebooks/nb04_context_comparison.py` - lineage / mutation-defined context -> compare dependency distributions inside vs outside the context
-- `notebooks/nb05_association_query.py` - gene dependency or drug sensitivity slice -> precomputed Breadbox association hits across modalities
+Each notebook ships with a committed session snapshot under [`notebooks/__marimo__/session/`](notebooks/__marimo__/session/) so the molab preview renders cell outputs without re-executing.
+
+| Notebook | Role | Preview |
+|---|---|---|
+| [`nb01_orientation.py`](notebooks/nb01_orientation.py) | Landing page: what Breadbox exposes and what questions this catalog should answer first | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb01_orientation.py) |
+| [`nb02_dataset_discovery.py`](notebooks/nb02_dataset_discovery.py) | Breadbox primitives: `bb_get`, `bb_post`, dataset discovery, dimension search, feature listing | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb02_dataset_discovery.py) |
+| [`nb03_gene_dependency_profile.py`](notebooks/nb03_gene_dependency_profile.py) | Gene -> Chronos dependency profile across cell lines, joined to model metadata | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb03_gene_dependency_profile.py) |
+| [`nb04_context_comparison.py`](notebooks/nb04_context_comparison.py) | Lineage / mutation-defined context -> compare dependency distributions inside vs outside | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb04_context_comparison.py) |
+| [`nb05_association_query.py`](notebooks/nb05_association_query.py) | Gene dependency or drug sensitivity slice -> precomputed Breadbox association hits across modalities | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb05_association_query.py) |
 
 The agent-facing catalog table in `.claude/skills/compose-notebook/SKILL.md` is the detailed contract: it lists reusable helpers, import patterns, and current gotchas.
 
