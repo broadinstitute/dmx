@@ -1,0 +1,61 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.5",
+    "script_metadata_hash": "7c7522566fe0e0599e5bffbb01d41170"
+  },
+  "cells": [
+    {
+      "id": "setup",
+      "code_hash": "1d0db38904205bec4d6f6f6a1f6cec3e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hbol",
+      "code_hash": "47d478415691dc71594710d354409965",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"nb01-orientation\">nb01 - orientation</h1>\n<span class=\"paragraph\">dmx is a marimo catalog for the public DepMap Breadbox API. Breadbox is the\nREST layer behind the DepMap Portal: datasets, dimensions, matrix values,\ntabular metadata, context expressions, two-class comparisons, and\nprecomputed associations.</span>\n<span class=\"paragraph\">The catalog is intentionally small. Each notebook teaches one move and\nexposes the helpers it introduces as <code>@app.function</code>s so later notebooks\ncan import them.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "1ac280caef559d5bbc06dccdfe48542c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"catalog-map\">Catalog map</h2>\n<table>\n<thead>\n<tr>\n<th>Notebook</th>\n<th>Move</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>nb02_dataset_discovery.py</code></td>\n<td>Breadbox HTTP helpers, dataset discovery, entity search</td>\n</tr>\n<tr>\n<td><code>nb03_gene_dependency_profile.py</code></td>\n<td>Gene -&gt; Chronos dependency profile across cell lines</td>\n</tr>\n<tr>\n<td><code>nb04_context_comparison.py</code></td>\n<td>Context expression -&gt; in/out dependency comparison</td>\n</tr>\n<tr>\n<td><code>nb05_association_query.py</code></td>\n<td>Query precomputed associations for a dependency or drug slice</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">First composition target: given a gene, find cancer contexts where its\ndependency is selective, annotate the relevant cell lines, and surface\ncorrelated genomic or drug features.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "1b00ce20f3764a132b470a3abd6b1165",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"breadbox-surfaces-this-catalog-starts-with\">Breadbox surfaces this catalog starts with</h2>\n<ul>\n<li>Dataset discovery: <code>data_types/</code>, <code>datasets/</code>, <code>types/dimensions</code></li>\n<li>Entity search: <code>datasets/dimensions/</code></li>\n<li>Matrix retrieval: <code>datasets/matrix/{dataset_id}</code></li>\n<li>Tabular metadata: <code>datasets/tabular/{dataset_id}</code></li>\n<li>Context expressions: <code>temp/context</code></li>\n<li>Associations: <code>temp/associations/query-slice</code></li>\n</ul>\n<span class=\"paragraph\">Public reads do not require authentication. The notebooks call Breadbox\ndirectly with <code>requests</code>.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

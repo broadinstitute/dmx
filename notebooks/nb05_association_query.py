@@ -106,7 +106,7 @@ def _(associations):
         modality_counts = pl.DataFrame()
     mo.md("## Returned modalities")
     mo.ui.table(modality_counts, page_size=10)
-    return (modality_counts,)
+    return
 
 
 @app.cell

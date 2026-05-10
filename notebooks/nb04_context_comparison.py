@@ -126,7 +126,7 @@ def _():
     mo.md(
         f"## Context: {DEFAULT_LINEAGE} ({len(resolved_context.get('ids', []))} models)"
     )
-    return context, resolved_context
+    return (context,)
 
 
 @app.cell
@@ -152,7 +152,7 @@ def _(context_table):
     )
     mo.md(f"## {DEFAULT_GENE}: in-context vs out-of-context")
     mo.ui.table(context_summary, page_size=5)
-    return (context_summary,)
+    return
 
 
 @app.cell

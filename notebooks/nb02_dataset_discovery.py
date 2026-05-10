@@ -134,7 +134,7 @@ def _():
     data_types = list_data_types()
     mo.md("## Data types")
     mo.ui.table(data_types, page_size=10)
-    return (data_types,)
+    return
 
 
 @app.cell
@@ -142,7 +142,7 @@ def _():
     dimension_types = list_dimension_types()
     mo.md("## Dimension types")
     mo.ui.table(dimension_types, page_size=10)
-    return (dimension_types,)
+    return
 
 
 @app.cell
@@ -150,7 +150,7 @@ def _():
     gene_model_datasets = list_datasets(feature_type="gene", sample_type="depmap_model")
     mo.md("## Gene x DepMap model datasets")
     mo.ui.table(gene_model_datasets, page_size=12)
-    return (gene_model_datasets,)
+    return
 
 
 @app.cell
