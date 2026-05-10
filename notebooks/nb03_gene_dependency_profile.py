@@ -74,9 +74,7 @@ def tabular_metadata(columns: list[str]) -> pl.DataFrame:
 
 
 @app.function
-def matrix_feature(
-    dataset_id: str, feature_label: str, value_name: str = "value"
-) -> pl.DataFrame:
+def matrix_feature(dataset_id: str, feature_label: str, value_name: str = "value") -> pl.DataFrame:
     """Fetch one feature from a gene x model matrix dataset."""
     raw = bb_post(
         f"datasets/matrix/{dataset_id}",

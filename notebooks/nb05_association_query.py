@@ -45,9 +45,7 @@ def _():
 
 
 @app.function
-def association_query(
-    dataset_id: str, identifier: str, identifier_type: str = "feature_label"
-) -> dict:
+def association_query(dataset_id: str, identifier: str, identifier_type: str = "feature_label") -> dict:
     """Query Breadbox precomputed associations for one dataset slice."""
     return bb_post(
         "temp/associations/query-slice",
@@ -86,9 +84,7 @@ def top_associations(
 
 @app.cell
 def _():
-    associations = top_associations(
-        DEFAULT_DATASET, DEFAULT_IDENTIFIER, DEFAULT_IDENTIFIER_TYPE, n=50
-    )
+    associations = top_associations(DEFAULT_DATASET, DEFAULT_IDENTIFIER, DEFAULT_IDENTIFIER_TYPE, n=50)
     mo.md(f"## Top associations: {DEFAULT_IDENTIFIER} in {DEFAULT_DATASET}")
     mo.ui.table(associations, page_size=15)
     return (associations,)
@@ -97,11 +93,7 @@ def _():
 @app.cell
 def _(associations):
     if "other_dataset_given_id" in associations.columns:
-        modality_counts = (
-            associations.group_by("other_dataset_given_id")
-            .len()
-            .sort("len", descending=True)
-        )
+        modality_counts = associations.group_by("other_dataset_given_id").len().sort("len", descending=True)
     else:
         modality_counts = pl.DataFrame()
     mo.md("## Returned modalities")
@@ -118,9 +110,7 @@ def _(associations):
         "other_dataset_given_id",
     }
     if required.issubset(set(associations.columns)):
-        plot_frame = associations.head(20).with_columns(
-            pl.col("log10qvalue").clip(-50, 0).alias("capped_log10qvalue")
-        )
+        plot_frame = associations.head(20).with_columns(pl.col("log10qvalue").clip(-50, 0).alias("capped_log10qvalue"))
         chart_output = mo.ui.altair_chart(
             alt.Chart(plot_frame)
             .mark_bar()
@@ -138,9 +128,7 @@ def _(associations):
             .properties(width=620, height=460)
         )
     else:
-        chart_output = mo.md(
-            "Association response did not include the expected plotting columns."
-        )
+        chart_output = mo.md("Association response did not include the expected plotting columns.")
     chart_output
     return
 

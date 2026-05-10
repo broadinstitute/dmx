@@ -80,11 +80,7 @@ def records_frame(records: object) -> pl.DataFrame:
     if records is None:
         return pl.DataFrame()
     if isinstance(records, list):
-        return (
-            pl.DataFrame(records, infer_schema_length=10_000)
-            if records
-            else pl.DataFrame()
-        )
+        return pl.DataFrame(records, infer_schema_length=10_000) if records else pl.DataFrame()
     if isinstance(records, dict):
         return pl.DataFrame([records], infer_schema_length=10_000)
     return pl.DataFrame({"value": [records]})
@@ -113,9 +109,7 @@ def list_datasets(**filters: object) -> pl.DataFrame:
 
 
 @app.function
-def search_dimensions(
-    substring: str, type_name: str | None = None, limit: int = 10
-) -> pl.DataFrame:
+def search_dimensions(substring: str, type_name: str | None = None, limit: int = 10) -> pl.DataFrame:
     """Search genes, compounds, or cell lines by substring."""
     params: dict[str, object] = {"substring": substring, "limit": limit}
     if type_name is not None:

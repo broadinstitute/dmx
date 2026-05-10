@@ -109,9 +109,7 @@ def dependency_context_table(
     resolved = resolve_context(context)
     in_ids = set(resolved.get("ids", []))
     scores = matrix_feature(dataset_id, gene, value_name="dependency")
-    metadata = tabular_metadata(
-        ["CellLineName", "OncotreeLineage", "OncotreePrimaryDisease"]
-    )
+    metadata = tabular_metadata(["CellLineName", "OncotreeLineage", "OncotreePrimaryDisease"])
     return (
         scores.join(metadata, on="depmap_id", how="left")
         .with_columns(pl.col("depmap_id").is_in(list(in_ids)).alias("in_context"))
@@ -123,9 +121,7 @@ def dependency_context_table(
 def _():
     context = lineage_context(DEFAULT_LINEAGE)
     resolved_context = resolve_context(context)
-    mo.md(
-        f"## Context: {DEFAULT_LINEAGE} ({len(resolved_context.get('ids', []))} models)"
-    )
+    mo.md(f"## Context: {DEFAULT_LINEAGE} ({len(resolved_context.get('ids', []))} models)")
     return (context,)
 
 
