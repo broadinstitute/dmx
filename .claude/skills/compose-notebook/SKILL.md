@@ -95,3 +95,12 @@ another notebook executes that notebook's setup block.
   load brings its own vega renderer with it. Same general rule for other
   third-party mimetypes: marimo widgets carry their renderer with them;
   raw mimetypes depend on the viewer.
+- Project the DataFrame to the columns the chart actually encodes before
+  passing it to altair. vega-lite embeds the entire input frame inline in
+  the chart spec, including columns you never reference in `encode(...)`
+  or in a transform. A many-thousand-row Breadbox response with extra
+  metadata columns easily blows past molab's `output_max_bytes` ceiling
+  (default ~10 MB) and the cell renders as a "Your output is too large"
+  callout instead of a chart. Fix: `df.select(["x_col", "color_col", ...])`
+  before `alt.Chart(df)`. Same principle for tooltips: hover doesn't work
+  in a static preview, so a many-row `tooltip=[...]` list is dead weight.
