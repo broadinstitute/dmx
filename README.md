@@ -1,9 +1,16 @@
-# dmx -- DepMap eXplore
+# dmx — DepMap eXplore
 
 A marimo notebook catalog for agent-composable analysis against the public [DepMap](https://depmap.org/portal/) Breadbox API.
 
 The pattern mirrors [jx](https://github.com/broadinstitute/jx), [fgx](https://github.com/broadinstitute/fgx), and [prx](https://github.com/broadinstitute/prx): a small catalog of numbered marimo notebooks, each a runnable demonstration and a source of pure helpers that later notebooks can import.
 The data surface is Breadbox, the REST API underlying the DepMap Portal.
+
+DepMap combines genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata.
+Breadbox gives a stable programmatic API for common moves: find datasets, search genes and compounds, retrieve matrix values, define model contexts, run two-class comparisons, and inspect precomputed associations.
+By default dmx targets the public Breadbox API at `https://depmap.org/portal/breadbox`, which does not require an API key for these read-only examples.
+
+dmx is the catalog version of those moves.
+The first goal is simple but useful: given a gene, find cancer contexts where its dependency is selective, annotate the relevant cell lines, and surface correlated genomic or drug features as follow-up hypotheses.
 
 ## The catalog
 
@@ -18,6 +25,8 @@ Each notebook ships with a committed session snapshot under [`notebooks/__marimo
 | [`nb05_association_query.py`](notebooks/nb05_association_query.py) | Gene dependency or drug sensitivity slice -> precomputed Breadbox association hits across modalities | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb05_association_query.py) |
 
 The agent-facing catalog table in `.claude/skills/compose-notebook/SKILL.md` is the detailed contract: it lists reusable helpers, import patterns, and current gotchas.
+
+Related public catalogs: [jx](https://github.com/broadinstitute/jx) for JUMP Cell Painting, [fgx](https://github.com/broadinstitute/fgx) for FinnGenie human genetics, and [prx](https://github.com/broadinstitute/prx) for PROSPECT chemical genetics.
 
 ## Getting started
 
@@ -34,17 +43,6 @@ npx skills add marimo-team/marimo-pair -g --agent "$AGENT" -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
 ```
 
-## What this is for
-
-DepMap combines genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata.
-Breadbox gives a stable programmatic API for common moves: find datasets, search genes and compounds, retrieve matrix values, define model contexts, run two-class comparisons, and inspect precomputed associations.
-By default dmx targets the public Breadbox API at `https://depmap.org/portal/breadbox`, which does not require an API key for these read-only examples.
-
-dmx is the catalog version of those moves.
-The first goal is simple but useful: given a gene, find cancer contexts where its dependency is selective, annotate the relevant cell lines, and surface correlated genomic or drug features as follow-up hypotheses.
-
-Related public catalogs: [jx](https://github.com/broadinstitute/jx) for JUMP Cell Painting, [fgx](https://github.com/broadinstitute/fgx) for FinnGenie human genetics, and [prx](https://github.com/broadinstitute/prx) for PROSPECT chemical genetics.
-
 ## License
 
-BSD 3-Clause - see [LICENSE](LICENSE).
+BSD 3-Clause — see [LICENSE](LICENSE).
