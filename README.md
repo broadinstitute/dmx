@@ -2,7 +2,7 @@
 
 An experiment in agent-driven scientific data exploration, built around the public [DepMap](https://depmap.org/portal/) Breadbox API — genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata for cancer-dependency analysis.
 
-dmx is a curated catalog of [marimo](https://marimo.io) notebooks for DepMap analysis, plus a thin skill that lets an agent compose new analyses from them.
+dmx is a curated catalog of [marimo](https://marimo.io) notebooks for cancer-dependency analysis, plus a thin skill that lets an agent compose new analyses from them.
 Each notebook is both a runnable demonstration and a source of pure functions other notebooks can [import and reuse](https://docs.marimo.io/guides/reusing_functions/) directly.
 Given a new cancer-dependency question, the agent picks relevant notebooks, composes their functions into a new notebook, executes it in a live kernel, and hands back a self-contained, re-runnable result.
 
@@ -33,7 +33,7 @@ If you prefer to run setup by hand:
 
 ```bash
 uv --version  # or: curl -LsSf https://astral.sh/uv/install.sh | sh
-AGENT=codex  # or: claude-code
+AGENT=claude-code  # or: codex
 npx skills add marimo-team/marimo-pair -g --agent "$AGENT" -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
 ```
