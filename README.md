@@ -1,16 +1,12 @@
 # dmx — DepMap eXplore
 
-A marimo notebook catalog for agent-composable analysis against the public [DepMap](https://depmap.org/portal/) Breadbox API.
+An experiment in agent-driven scientific data exploration, built around the public [DepMap](https://depmap.org/portal/) Breadbox API — genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata for cancer-dependency analysis.
 
-The pattern mirrors [jx](https://github.com/broadinstitute/jx), [fgx](https://github.com/broadinstitute/fgx), and [prx](https://github.com/broadinstitute/prx): a small catalog of numbered marimo notebooks, each a runnable demonstration and a source of pure helpers that later notebooks can import.
-The data surface is Breadbox, the REST API underlying the DepMap Portal.
+dmx is a curated catalog of [marimo](https://marimo.io) notebooks for DepMap analysis, plus a thin skill that lets an agent compose new analyses from them.
+Each notebook is both a runnable demonstration and a source of pure functions other notebooks can [import and reuse](https://docs.marimo.io/guides/reusing_functions/) directly.
+Given a new cancer-dependency question, the agent picks relevant notebooks, composes their functions into a new notebook, executes it in a live kernel, and hands back a self-contained, re-runnable result.
 
-DepMap combines genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata.
-Breadbox gives a stable programmatic API for common moves: find datasets, search genes and compounds, retrieve matrix values, define model contexts, run two-class comparisons, and inspect precomputed associations.
-By default dmx targets the public Breadbox API at `https://depmap.org/portal/breadbox`, which does not require an API key for these read-only examples.
-
-dmx is the catalog version of those moves.
-The first goal is simple but useful: given a gene, find cancer contexts where its dependency is selective, annotate the relevant cell lines, and surface correlated genomic or drug features as follow-up hypotheses.
+Breadbox is the REST API underlying the DepMap Portal: find datasets, search genes and compounds, retrieve matrix values, define model contexts, run two-class comparisons, and inspect precomputed associations. By default dmx targets `https://depmap.org/portal/breadbox`, which does not require an API key for these read-only examples.
 
 ## The catalog
 
