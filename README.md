@@ -30,15 +30,14 @@ Related public catalogs of the same pattern: [jx](https://github.com/broadinstit
 
 ## Getting started
 
-Clone this repo, open Codex inside it, and ask: *help me get started*.
-The `getting-started` skill launches `nb01_orientation` in a live marimo kernel and hands off to `compose-notebook` for analysis.
+Clone this repo, open Claude Code inside it, and ask: *help me get started*.
+The `getting-started` skill installs prereqs ([uv](https://docs.astral.sh/uv/) and the [marimo-pair](https://github.com/marimo-team/marimo-pair) skill), launches `nb01_orientation` in a live marimo kernel, and hands off to the `compose-notebook` skill for the actual analysis.
 
 If you prefer to run setup by hand:
 
 ```bash
-uv --version
+uv --version  # or: curl -LsSf https://astral.sh/uv/install.sh | sh
 AGENT=codex  # or: claude-code
-npx skills add marimo-team/skills -g --agent "$AGENT" -y
 npx skills add marimo-team/marimo-pair -g --agent "$AGENT" -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
 ```
