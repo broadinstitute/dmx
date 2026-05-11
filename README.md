@@ -38,6 +38,8 @@ npx skills add marimo-team/marimo-pair -g --agent "$AGENT" -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
 ```
 
+The skills reference in-repo notebooks and assets, so they only work in the cloned repo — there's no `npx skills add broadinstitute/dmx` flow.
+
 ## License
 
 BSD 3-Clause — see [LICENSE](LICENSE).
