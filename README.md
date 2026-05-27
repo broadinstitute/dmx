@@ -1,7 +1,7 @@
 # dmx — DepMap eXplore
 
 > [!NOTE]
-> Personal experiment — not an official DepMap project.
+> Part of the [jx](https://github.com/broadinstitute/jx) experiment — not an official DepMap project.
 
 An experiment in agent-driven scientific data exploration, built around the public [DepMap](https://depmap.org/portal/) Breadbox API — genome-scale perturbation screens, omics, drug sensitivity, and cell-line metadata for cancer-dependency analysis.
 
