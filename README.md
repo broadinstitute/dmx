@@ -30,9 +30,8 @@ Composed notebooks that answer one question by reusing the catalog helpers (not 
 
 | Notebook | Question | Preview |
 |---|---|---|
-| `nightshift_single_agent_submission.py` | A DepMap/PRISM-grounded submission to the [Night Shift / Karman](https://karmanai.org/) single-agent ranking tasks (1.1-1.5): predicts viability + rank from public data only, with inline reasoning | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_single_agent_submission.py) |
-
-`nightshift_single_agent_eval.py` is the organizer-side companion: it scores that submission against the private wet-lab oracle to estimate how lookup-able each task is. It needs the held-out oracle to run, so it is not a molab artifact and its snapshot is gitignored.
+| `nightshift_single_agent_submission.py` | A DepMap/PRISM-grounded submission to the [Night Shift / Karman](https://karmanai.org/) single-agent ranking tasks (1.1-1.5): predicts viability + rank from public data only, with inline reasoning. Self-contained (templates fetched from the live server; helpers inline if nb02/nb03 are absent) | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_single_agent_submission.py) |
+| `nightshift_single_agent_eval.py` | Organizer-side companion: scores that submission against the held-out wet-lab ground truth and reports **aggregate** rank-agreement per task (Spearman / Kendall). Per-drug measured values are never shown, so it exposes no answer key | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_single_agent_eval.py) |
 
 ## Getting started
 
