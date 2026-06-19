@@ -16,11 +16,11 @@ Each notebook ships a committed session snapshot under [`notebooks/__marimo__/se
 
 | Notebook | Role | Preview |
 |---|---|---|
-| `nb01_orientation.py` | Landing page: what Breadbox exposes, a live dimension-types check, and what questions this catalog should answer first | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/recreate-with-vignette-catalog-skills/notebooks/nb01_orientation.py) |
-| `nb02_dataset_discovery.py` | Breadbox primitives: `bb_get`, `bb_post`, dataset discovery, dimension search, feature listing | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/recreate-with-vignette-catalog-skills/notebooks/nb02_dataset_discovery.py) |
-| `nb03_gene_dependency_profile.py` | Gene -> Chronos dependency profile across cell lines, joined to model metadata | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/recreate-with-vignette-catalog-skills/notebooks/nb03_gene_dependency_profile.py) |
-| `nb04_context_comparison.py` | Lineage / mutation-defined context -> compare dependency distributions inside vs outside | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/recreate-with-vignette-catalog-skills/notebooks/nb04_context_comparison.py) |
-| `nb05_association_query.py` | Gene dependency or drug sensitivity slice -> precomputed Breadbox association hits across modalities | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/recreate-with-vignette-catalog-skills/notebooks/nb05_association_query.py) |
+| `nb01_orientation.py` | Landing page: what Breadbox exposes, a live dimension-types check, and what questions this catalog should answer first | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb01_orientation.py) |
+| `nb02_dataset_discovery.py` | Breadbox primitives: `bb_get`, `bb_post`, dataset discovery, dimension search, feature listing | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb02_dataset_discovery.py) |
+| `nb03_gene_dependency_profile.py` | Gene -> Chronos dependency profile across cell lines, joined to model metadata | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb03_gene_dependency_profile.py) |
+| `nb04_context_comparison.py` | Lineage / mutation-defined context -> compare dependency distributions inside vs outside | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb04_context_comparison.py) |
+| `nb05_association_query.py` | Gene dependency or drug sensitivity slice -> precomputed Breadbox association hits across modalities | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nb05_association_query.py) |
 
 `catalog.toml`'s `[[vignette]]` table is the machine-readable version the compose skill reads: each notebook, its reusable helpers, and what it does.
 
