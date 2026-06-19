@@ -27,11 +27,15 @@ Each notebook ships a committed session snapshot under [`notebooks/__marimo__/se
 ## Getting started
 
 This catalog follows the [vignette-catalog-skills](https://github.com/carpenter-singh-lab/vignette-catalog-skills) pattern.
-The skill stores are gitignored, so a fresh clone has only `skills-lock.json`; restore the on-disk skill content first:
+The skill stores are gitignored, so a fresh clone has only `skills-lock.json`; restore the on-disk skill content first.
+`npx skills update` won't create Claude Code's `.claude/skills/` on a fresh clone, so add the skills explicitly:
 
 ```bash
-npx skills update
+npx skills add carpenter-singh-lab/vignette-catalog-skills --agent claude-code -y
+npx skills add marimo-team/marimo-pair --agent claude-code -y
 ```
+
+This writes `.claude/skills/` as well as `.agents/skills/` (both gitignored); if a session is already open, run `/reload-skills` or restart it so the new skills register.
 
 Then open Claude Code in this repo and ask to *get started* - the `vignette-catalog-setup` skill installs prereqs ([uv](https://docs.astral.sh/uv/) and the [marimo-pair](https://github.com/marimo-team/marimo-pair) skill), launches `nb01_orientation` in a live marimo kernel, and hands off to `vignette-catalog-compose-notebook` for the actual analysis.
 

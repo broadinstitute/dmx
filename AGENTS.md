@@ -8,11 +8,19 @@ This catalog uses the shared vignette-catalog-skills (`vignette-catalog-setup`, 
 
 The catalog skills are installed via `npx skills add`, recorded in the tracked `skills-lock.json`, but **not vendored** -
 the install stores (`.agents/`, `.claude/skills/*`) are gitignored. A fresh clone has only the lock, so the on-disk
-skill content (and the `validate-notebook.sh` the rule below depends on) is missing until you restore it. Run once, from the repo root:
+skill content (and the `validate-notebook.sh` the rule below depends on) is missing until you restore it.
 
-    npx skills update
+Do **not** use `npx skills update` for this. `update` only refreshes agent stores that already exist on disk and has
+no `--agent` flag (only `-g`/`-p`/`-y`); on a fresh clone it materializes the Universal store (`.agents/`) but **not**
+`.claude/skills/`, where Claude Code discovers project skills - so the skills look installed yet Claude Code sees nothing.
+Add them explicitly instead, from the repo root, with `add --agent` (the only command that targets a specific store):
 
-This reconstitutes every skill the lock pins. Do this before relying on the skills or the validation rule.
+    npx skills add carpenter-singh-lab/vignette-catalog-skills --agent claude-code -y
+    npx skills add marimo-team/marimo-pair --agent claude-code -y
+
+(`--agent` takes `claude-code,codex` or `*` for several stores.) This writes `.claude/skills/` (and `.agents/`); both are
+gitignored. Do it before relying on the skills or the validation rule, and run `/reload-skills` (or restart an
+already-open session) so they register.
 (This instruction lives here, in a tracked file, on purpose: a skill cannot bootstrap its own install.)
 
 ## Launching notebooks
