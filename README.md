@@ -24,6 +24,14 @@ Each notebook ships a committed session snapshot under [`notebooks/__marimo__/se
 
 `catalog.toml`'s `[[vignette]]` table is the machine-readable version the compose skill reads: each notebook, its reusable helpers, and what it does.
 
+### Applied examples
+
+Composed notebooks that answer one question by reusing the catalog helpers (not core vignettes).
+
+| Notebook | Question | Preview |
+|---|---|---|
+| `nightshift_single_agent_submission.py` | A DepMap/PRISM-grounded submission to the Night Shift single-agent ranking tasks (1.1-1.5), self-scored against the wet-lab oracle | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_single_agent_submission.py) |
+
 ## Getting started
 
 This catalog follows the [vignette-catalog-skills](https://github.com/carpenter-singh-lab/vignette-catalog-skills) pattern.

@@ -1,0 +1,29 @@
+{
+  "description": "A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM fold-change plus a 24h/48h kinetic factor; self-scored against the local oracle.",
+  "numbers": {
+    "tasks": [
+      "1.1",
+      "1.2",
+      "1.3",
+      "1.4",
+      "1.5"
+    ],
+    "spearman_A375_48h": 0.438,
+    "spearman_LOXIMVI_48h": 0.434,
+    "spearman_pooled_1_5": 0.687
+  },
+  "files": [
+    "submission/task_1/output.json",
+    "submission/task_1/reasoning.md",
+    "submission/task_1/output.json",
+    "submission/task_1/reasoning.md",
+    "submission/task_1/output.json",
+    "submission/task_1/reasoning.md",
+    "submission/task_1/output.json",
+    "submission/task_1/reasoning.md",
+    "submission/task_1/output.json",
+    "submission/task_1/reasoning.md",
+    "scores.csv",
+    "predicted_vs_oracle.csv"
+  ]
+}

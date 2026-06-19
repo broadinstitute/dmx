@@ -1,0 +1,191 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.10",
+    "script_metadata_hash": "174546b076339e315a970cdc587e773d"
+  },
+  "cells": [
+    {
+      "id": "setup",
+      "code_hash": "9073b2c81c3e1cc9c145c7609e28215c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hbol",
+      "code_hash": "37d3cedc6cad170852b3b4989dd90fe8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"a-depmap-grounded-submission-to-nightshift-single-agent-tasks-11-15\">A DepMap-grounded submission to nightshift single-agent tasks 1.1-1.5</h1>\n<span class=\"paragraph\">The nightshift tasks hand an agent a real melanoma viability experiment - cell line, the\n12 compounds, their exact doses, the timepoint - and ask it to <strong>predict</strong> the % viability\nand rank, from \"known pharmacology, target, concentration, cell line, timepoint,\" with <strong>no\nreadout data and no requesting raw data</strong>. So a public-data lookup is the sanctioned move.</span>\n<span class=\"paragraph\">This notebook <em>is</em> that lookup, made concrete. Tasks 1.1-1.4 are A375/LOXIMVI at 24h/48h;\n1.5 pools all 48 conditions into one ranking. The engine is <strong>PRISM Repurposing Secondary</strong>\n(DepMap), read at the screened concentration nearest each drug's task dose:</span>\n<ol>\n<li>PRISM log2 fold-change at the matched dose -&gt; predicted fractional viability <code>2**log2fc</code>.</li>\n<li>A stated 24h/48h kinetic factor turns that into a predicted % viability per timepoint.</li>\n<li>Rank each task's conditions by predicted viability (1 = strongest = lowest viability).</li>\n</ol>\n<span class=\"paragraph\">It writes the five populated <code>output.json</code> submissions, then <strong>self-scores</strong> against the\nlocal oracle - the honest \"how lookup-able is each task\" readout. (A real contestant has no\noracle; the self-score is ours, to see how far public data gets.)</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "d612a08475c867ebbcaa114f4df0a7b6",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "e64f19896dc62ad8fd0008006d9731eb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "1dcf19f4dc9a71f2fef734edb7460131",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "a32567026e3044d4c5d17108a6fa7419",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "e732519f6c38e371565545f84c1cb96a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='PKri-0' random-id='3eb6748f-4725-3c52-dba6-2a99fc6b1ac6'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.5,&#92;&quot;prism_dose_uM&#92;&quot;:0.625,&#92;&quot;prism_log2fc&#92;&quot;:-2.9566503215,&#92;&quot;prism_viab_pct&#92;&quot;:12.9},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.1,&#92;&quot;prism_dose_uM&#92;&quot;:0.15625,&#92;&quot;prism_log2fc&#92;&quot;:-2.4099166866,&#92;&quot;prism_viab_pct&#92;&quot;:18.8},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.1,&#92;&quot;prism_dose_uM&#92;&quot;:0.15625,&#92;&quot;prism_log2fc&#92;&quot;:-2.3401688257,&#92;&quot;prism_viab_pct&#92;&quot;:19.7},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.03,&#92;&quot;prism_dose_uM&#92;&quot;:0.0390625,&#92;&quot;prism_log2fc&#92;&quot;:-2.216714919,&#92;&quot;prism_viab_pct&#92;&quot;:21.5},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.01,&#92;&quot;prism_dose_uM&#92;&quot;:0.00977,&#92;&quot;prism_log2fc&#92;&quot;:-2.0247366397,&#92;&quot;prism_viab_pct&#92;&quot;:24.6},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.1,&#92;&quot;prism_dose_uM&#92;&quot;:0.15625,&#92;&quot;prism_log2fc&#92;&quot;:-1.9954211642,&#92;&quot;prism_viab_pct&#92;&quot;:25.1},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:5.0,&#92;&quot;prism_dose_uM&#92;&quot;:2.5,&#92;&quot;prism_log2fc&#92;&quot;:-1.8599205798,&#92;&quot;prism_viab_pct&#92;&quot;:27.5},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:1.0,&#92;&quot;prism_dose_uM&#92;&quot;:0.625,&#92;&quot;prism_log2fc&#92;&quot;:-1.8499444178,&#92;&quot;prism_viab_pct&#92;&quot;:27.7},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.05,&#92;&quot;prism_dose_uM&#92;&quot;:0.0391,&#92;&quot;prism_log2fc&#92;&quot;:-1.7677168122,&#92;&quot;prism_viab_pct&#92;&quot;:29.4},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:0.1,&#92;&quot;prism_dose_uM&#92;&quot;:0.15625,&#92;&quot;prism_log2fc&#92;&quot;:-1.4060256135,&#92;&quot;prism_viab_pct&#92;&quot;:37.7},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:5.0,&#92;&quot;prism_dose_uM&#92;&quot;:2.5,&#92;&quot;prism_log2fc&#92;&quot;:-0.1982340381,&#92;&quot;prism_viab_pct&#92;&quot;:87.2},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;dose_uM&#92;&quot;:5.0,&#92;&quot;prism_dose_uM&#92;&quot;:2.5,&#92;&quot;prism_log2fc&#92;&quot;:-0.1658543175,&#92;&quot;prism_viab_pct&#92;&quot;:89.1}]&quot;' data-total-rows='24' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;cell_line&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;dose_uM&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;prism_dose_uM&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;prism_log2fc&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;prism_viab_pct&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "b27ba72b15d14f31e84c4bcfcbf65678",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Xref-0' random-id='4727f29f-ab0f-ac59-315c-5b8721342ef8'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;condition&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:52.1},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:55.3},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:55.9},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:56.8},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:58.5},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:58.8},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:60.2},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;condition&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:60.3},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:61.2},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;condition&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:65.8},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;condition&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:92.9},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;condition&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;pred_viability_pct&#92;&quot;:94.0}]&quot;' data-total-rows='48' data-total-columns='4' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='12' data-field-types='[[&quot;condition&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;cell_line&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;timepoint_h&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;pred_viability_pct&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "cf8565ca9b9157c4728ac40a9da32864",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "e891e101e816b919fa690d383b4123d7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='BYtC-0' random-id='689ed883-af1f-cf07-8172-563a95fa7d0d'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;500 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:12.9},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:18.8},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:19.7},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;30 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:21.5},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;rank&#92;&quot;:5,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;10 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:24.6},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;rank&#92;&quot;:6,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:25.1},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;rank&#92;&quot;:7,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:27.5},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;rank&#92;&quot;:8,&#92;&quot;condition&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;1 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:27.7},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;rank&#92;&quot;:9,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;50 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:29.4},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;rank&#92;&quot;:10,&#92;&quot;condition&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:37.7},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;rank&#92;&quot;:11,&#92;&quot;condition&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:87.2},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;rank&#92;&quot;:12,&#92;&quot;condition&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:89.1}]&quot;' data-total-rows='12' data-total-columns='4' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;rank&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;condition&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;concentration&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;viability_pct&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "44c5c39b597d04ea6d6ad7e1411b4315",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='RGSE-0' random-id='15cf83fe-df78-99f1-57ca-5ea8177de455'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;task&#92;&quot;:&#92;&quot;1.1&#92;&quot;,&#92;&quot;scope&#92;&quot;:&#92;&quot;A375 24h&#92;&quot;,&#92;&quot;n&#92;&quot;:12,&#92;&quot;spearman&#92;&quot;:0.119,&#92;&quot;kendall_tau_b&#92;&quot;:0.121},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;task&#92;&quot;:&#92;&quot;1.2&#92;&quot;,&#92;&quot;scope&#92;&quot;:&#92;&quot;LOXIMVI 24h&#92;&quot;,&#92;&quot;n&#92;&quot;:12,&#92;&quot;spearman&#92;&quot;:0.28,&#92;&quot;kendall_tau_b&#92;&quot;:0.212},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;task&#92;&quot;:&#92;&quot;1.3&#92;&quot;,&#92;&quot;scope&#92;&quot;:&#92;&quot;A375 48h&#92;&quot;,&#92;&quot;n&#92;&quot;:12,&#92;&quot;spearman&#92;&quot;:0.438,&#92;&quot;kendall_tau_b&#92;&quot;:0.29},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;task&#92;&quot;:&#92;&quot;1.4&#92;&quot;,&#92;&quot;scope&#92;&quot;:&#92;&quot;LOXIMVI 48h&#92;&quot;,&#92;&quot;n&#92;&quot;:12,&#92;&quot;spearman&#92;&quot;:0.434,&#92;&quot;kendall_tau_b&#92;&quot;:0.333},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;task&#92;&quot;:&#92;&quot;1.5&#92;&quot;,&#92;&quot;scope&#92;&quot;:&#92;&quot;pooled (2 lines x 2 timepoints)&#92;&quot;,&#92;&quot;n&#92;&quot;:48,&#92;&quot;spearman&#92;&quot;:0.687,&#92;&quot;kendall_tau_b&#92;&quot;:0.484}]&quot;' data-total-rows='5' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='8' data-field-types='[[&quot;task&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;scope&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;n&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;spearman&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;kendall_tau_b&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "0d78385e281f69a2c5bf91c49acb9ed2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Kclp-0' random-id='08107384-459e-e128-9886-bc064609ede6'><marimo-vega data-initial-value='{}' data-label='null' data-spec='{&quot;config&quot;:{&quot;view&quot;:{&quot;continuousWidth&quot;:300,&quot;continuousHeight&quot;:300}},&quot;data&quot;:{&quot;url&quot;:&quot;data:application/vnd.apache.arrow.file;base64,QVJST1cxAAD/////kAEAAAQAAADy////FAAAAAQAAQAAAAoACwAIAAoABAD4////DAAAAAgACAAAAAQABgAAACABAADwAAAAsAAAAHAAAAAwAAAABAAAAOT+//8YAAAAEAAAAAgAAAABGAAAAAAAAOT+//8FAAAAbGFiZWwAAAAM////HAAAABAAAAAIAAAAAQMAAAAAAAC+////AgAAABQAAABvcmFjbGVfdmlhYmlsaXR5X3BjdAAAAABI////IAAAABAAAAAIAAAAAQMAAAAAAAD6////AgAGAAYABAASAAAAcHJlZF92aWFiaWxpdHlfcGN0AACE////KAAAABAAAAAIAAAAAQIAAAAAAAD0////QAAAAAEAAAAIAAkABAAIAAsAAAB0aW1lcG9pbnRfaADA////GAAAABAAAAAIAAAAARgAAAAAAADA////CQAAAGNlbGxfbGluZQAAAOz///8sAAAAIAAAABgAAAABGAAAEAASAAQAEAARAAgAAAAMAAAAAAD8////BAAEAAkAAABjb25kaXRpb24AAAD/////mAEAAAQAAADs////gA0AAAAAAAAUAAAABAADAAwAEwAQABIADAAEAOb///8wAAAAAAAAAAQBAAA4AAAAFAAAAAAADgAYAAQADAAQAAAAFAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAgAEAAAAAAACABwAAAAAAAAAAAAAAAAAAgAcAAAAAAACAAQAAAAAAAAAJAAAAAAAAAAAAAAAAAAAACQAAAAAAAIABAAAAAAAAgAoAAAAAAAAAAAAAAAAAAIAKAAAAAAAAAAMAAAAAAAAAAAAABgAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAwAAABTYXBhbmlzZXJ0aWIMAAAAUGFub2Jpbm9zdGF0CQAAAEFscGVsaXNpYgAAAAsAAABDb2JpbWV0aW5pYgAHAAAAVEFLLTczMwAAAAAADAAAAENhcGl2YXNlcnRpYgoAAABUcmFtZXRpbmliAAAKAAAARGFicmFmZW5pYgAACwAAAEVuY29yYWZlbmliAAsAAABCaW5pbWV0aW5pYgALAAAAVmVtdXJhZmVuaWIACwAAAFJlZ29yYWZlbmliAAwAAABTYXBhbmlzZXJ0aWIMAAAAUGFub2Jpbm9zdGF0CQAAAEFscGVsaXNpYgAAAAsAAABDb2JpbWV0aW5pYgAMAAAAQ2FwaXZhc2VydGliCgAAAFRyYW1ldGluaWIAAAoAAABEYWJyYWZlbmliAAAHAAAAVEFLLTczMwAAAAAACwAAAFJlZ29yYWZlbmliAAsAAABCaW5pbWV0aW5pYgALAAAAVmVtdXJhZmVuaWIACwAAAEVuY29yYWZlbmliAAwAAABQYW5vYmlub3N0YXQMAAAAU2FwYW5pc2VydGliCgAAAERhYnJhZmVuaWIAAAcAAABUQUstNzMzAAAAAAAKAAAAVHJhbWV0aW5pYgAACwAAAENvYmltZXRpbmliAAsAAABFbmNvcmFmZW5pYgALAAAAVmVtdXJhZmVuaWIACwAAAEJpbmltZXRpbmliAAkAAABBbHBlbGlzaWIAAAAMAAAAQ2FwaXZhc2VydGliCwAAAFJlZ29yYWZlbmliAAwAAABQYW5vYmlub3N0YXQMAAAAU2FwYW5pc2VydGliCgAAAFRyYW1ldGluaWIAAAsAAABDb2JpbWV0aW5pYgAHAAAAVEFLLTczMwAAAAAACwAAAFJlZ29yYWZlbmliAAoAAABEYWJyYWZlbmliAAAJAAAAQWxwZWxpc2liAAAADAAAAENhcGl2YXNlcnRpYgsAAABCaW5pbWV0aW5pYgALAAAARW5jb3JhZmVuaWIACwAAAFZlbXVyYWZlbmliAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAwAAAA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&quot;,&quot;format&quot;:{&quot;type&quot;:&quot;arrow&quot;}},&quot;mark&quot;:{&quot;type&quot;:&quot;circle&quot;,&quot;opacity&quot;:0.8,&quot;size&quot;:90},&quot;encoding&quot;:{&quot;color&quot;:{&quot;field&quot;:&quot;label&quot;,&quot;title&quot;:&quot;line / timepoint&quot;,&quot;type&quot;:&quot;nominal&quot;},&quot;tooltip&quot;:[{&quot;field&quot;:&quot;condition&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;cell_line&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;timepoint_h&quot;,&quot;type&quot;:&quot;quantitative&quot;},{&quot;field&quot;:&quot;pred_viability_pct&quot;,&quot;type&quot;:&quot;quantitative&quot;},{&quot;field&quot;:&quot;oracle_viability_pct&quot;,&quot;type&quot;:&quot;quantitative&quot;}],&quot;x&quot;:{&quot;field&quot;:&quot;pred_viability_pct&quot;,&quot;title&quot;:&quot;predicted % viability (PRISM-grounded)&quot;,&quot;type&quot;:&quot;quantitative&quot;},&quot;y&quot;:{&quot;field&quot;:&quot;oracle_viability_pct&quot;,&quot;title&quot;:&quot;oracle % viability (measured)&quot;,&quot;type&quot;:&quot;quantitative&quot;}},&quot;height&quot;:360,&quot;width&quot;:420,&quot;&#36;schema&quot;:&quot;https://vega.github.io/schema/vega-lite/v5.20.1.json&quot;}' data-chart-selection='true' data-field-selection='true' data-embed-options='{}'></marimo-vega></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "499233683cf2587d298a84a6ca883d0a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><div class=\"language-json codehilite\"><pre><span></span><code><span class=\"p\">{</span>\n<span class=\"w\">  </span><span class=\"nt\">&quot;description&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"s2\">&quot;A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM fold-change plus a 24h/48h kinetic factor; self-scored against the local oracle.&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">  </span><span class=\"nt\">&quot;numbers&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"p\">{</span>\n<span class=\"w\">    </span><span class=\"nt\">&quot;tasks&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"p\">[</span>\n<span class=\"w\">      </span><span class=\"s2\">&quot;1.1&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">      </span><span class=\"s2\">&quot;1.2&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">      </span><span class=\"s2\">&quot;1.3&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">      </span><span class=\"s2\">&quot;1.4&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">      </span><span class=\"s2\">&quot;1.5&quot;</span>\n<span class=\"w\">    </span><span class=\"p\">],</span>\n<span class=\"w\">    </span><span class=\"nt\">&quot;spearman_A375_48h&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"mf\">0.438</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"nt\">&quot;spearman_LOXIMVI_48h&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"mf\">0.434</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"nt\">&quot;spearman_pooled_1_5&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"mf\">0.687</span>\n<span class=\"w\">  </span><span class=\"p\">},</span>\n<span class=\"w\">  </span><span class=\"nt\">&quot;files&quot;</span><span class=\"p\">:</span><span class=\"w\"> </span><span class=\"p\">[</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/output.json&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/reasoning.md&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/output.json&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/reasoning.md&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/output.json&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/reasoning.md&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/output.json&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/reasoning.md&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/output.json&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;submission/task_1/reasoning.md&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;scores.csv&quot;</span><span class=\"p\">,</span>\n<span class=\"w\">    </span><span class=\"s2\">&quot;predicted_vs_oracle.csv&quot;</span>\n<span class=\"w\">  </span><span class=\"p\">]</span>\n<span class=\"p\">}</span>\n</code></pre></div></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "b86a100cc7c327d5fbd9065f3fd0cfea",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"what-this-submission-can-and-cannot-do\">What this submission can and cannot do</h2>\n<ul>\n<li><strong>The ranking is the load-bearing prediction</strong>, and it comes entirely from PRISM measured\n  drug response in these two lines - the strongest public signal available. The grader uses\n  <code>rank</code> when present, so the predicted % viability is a readable secondary.</li>\n<li><strong>It cannot reorder drugs between 24h and 48h.</strong> PRISM has one timepoint; our kinetic factor\n  is a uniform scaling, so the within-line ordering is identical at both timepoints. The oracle\n  <em>does</em> reorder (e.g. Panobinostat overtakes Sapanisertib by 48h) - that drug-specific kinetics\n  is a real part of the challenge that public sensitivity data does not carry.</li>\n<li><strong>Absolute viability is approximate.</strong> PRISM is a ~5-day pooled screen, the oracle a 48h\n  single-dose CellTiter-Glo, and the dose grid is coarse (4x steps), so the level can be off\n  even where the ranking is right (Panobinostat is the clearest miss).</li>\n<li><strong>LOXIMVI is the harder line</strong> - its predicted ranking agrees with the oracle less than A375's.</li>\n</ul>\n<h2 id=\"to-extend\">To extend</h2>\n<ul>\n<li>Swap the rank signal to dose-collapsed PRISM <strong>AUC</strong> and compare self-scores - AUC integrates\n  the whole curve and ranked A375 better in earlier analysis, at the cost of a dose-specific level.</li>\n<li>Encode a per-drug kinetic prior (BRAF/MEK inhibitors act slower than mTOR/HDAC) so the 24h and\n  48h rankings can differ - the one thing this submission structurally cannot predict.</li>\n<li>Ensemble PRISM with GDSC2 and CTD^2 (also in Breadbox for these lines) and submit the consensus.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}
