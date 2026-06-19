@@ -14,6 +14,9 @@ notebooks/__marimo__/**
 !notebooks/__marimo__/
 !notebooks/__marimo__/session/
 !notebooks/__marimo__/session/*.json
+# ...except the eval notebook's snapshot: it embeds the private wet-lab oracle, so it is
+# organizer-side only and must never be published. Re-ignore it explicitly.
+notebooks/__marimo__/session/nightshift_single_agent_eval.py.json
 
 # Python and tool caches
 .venv/

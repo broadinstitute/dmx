@@ -5,7 +5,6 @@
 #     "marimo",
 #     "polars==1.40.1",
 #     "requests==2.32.5",
-#     "scipy==1.16.0",
 # ]
 # ///
 
@@ -25,7 +24,6 @@ with app.setup:
     import altair as alt
     import marimo as mo
     import polars as pl
-    from scipy.stats import kendalltau, spearmanr
 
     NOTEBOOK_DIR = Path(__file__).resolve().parent
     if str(NOTEBOOK_DIR) not in sys.path:
@@ -34,13 +32,10 @@ with app.setup:
     from nb02_dataset_discovery import dataset_features  # noqa: E402
     from nb03_gene_dependency_profile import matrix_feature  # noqa: E402
 
-    # The nightshift benchmark (task prompts + the local oracle) lives next to this catalog.
+    # The nightshift benchmark task prompts live next to this catalog. We read ONLY the answer-key-free
+    # templates here - never the oracle. Scoring is the grader's job (see nightshift_single_agent_eval).
     NIGHTSHIFT = NOTEBOOK_DIR.parent.parent / "nightshift-dev"
     TASKS_DIR = NIGHTSHIFT / "data" / "raw" / "tasks"
-    ORACLE = {
-        24: NIGHTSHIFT / "data" / "processed" / "nb03_oracle" / "ranking_24h_single.csv",
-        48: NIGHTSHIFT / "data" / "processed" / "nb03_oracle" / "ranking_48h_single.csv",
-    }
 
     OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_single_agent_submission"
     SUB_DIR = OUT_DIR / "submission"
@@ -102,9 +97,10 @@ def _():
     2. A stated 24h/48h kinetic factor turns that into a predicted % viability per timepoint.
     3. Rank each task's conditions by predicted viability (1 = strongest = lowest viability).
 
-    It writes the five populated `output.json` submissions, then **self-scores** against the
-    local oracle - the honest "how lookup-able is each task" readout. (A real contestant has no
-    oracle; the self-score is ours, to see how far public data gets.)
+    It writes the five populated `output.json` submissions plus a `reasoning.md` trace for each,
+    using **only public data - no oracle access** - exactly as the task requires. Scoring against
+    the wet-lab ground truth is a separate, organizer-side step (`nightshift_single_agent_eval`);
+    a real contestant cannot do it, so it does not belong here.
     """)
     return
 
@@ -165,62 +161,91 @@ def fill_submission(template: dict, pred_via: dict) -> dict:
     return out
 
 
+@app.function
+def prism_dose_signal() -> pl.DataFrame:
+    """PRISM dose-resolved log2 fold-change at the dose nearest each panel drug's task dose, both lines.
+
+    Importable so the evaluation notebook reuses the exact same engine - no re-implementation, no
+    dependence on the (gitignored) written submission files.
+    """
+    viab_features = dataset_features(PRISM_VIAB)
+    rows = []
+    for c in PANEL:
+        pick = nearest_dose_label(viab_features, c["prism"], c["dose_uM"])
+        label, picked_uM = pick if pick else (None, None)
+        vals = two_line_values(PRISM_VIAB, label) if label else {k: None for k in CELL_LINES}
+        for line, log2fc in vals.items():
+            rows.append(
+                {
+                    "drug": c["drug"],
+                    "cell_line": line,
+                    "dose_uM": c["dose_uM"],
+                    "prism_dose_uM": picked_uM,
+                    "prism_log2fc": log2fc,
+                    "prism_viab_pct": round(100.0 * 2.0**log2fc, 1) if log2fc is not None else None,
+                }
+            )
+    return pl.DataFrame(rows)
+
+
+@app.function
+def panel_predictions(signal: pl.DataFrame | None = None) -> pl.DataFrame:
+    """Predicted % viability per (condition, cell_line, timepoint) from the PRISM signal + kinetic factor."""
+    if signal is None:
+        signal = prism_dose_signal()
+    rows = []
+    for row in signal.iter_rows(named=True):
+        if row["prism_log2fc"] is None:
+            continue
+        for tp in (24, 48):
+            rows.append(
+                {
+                    "condition": row["drug"],
+                    "cell_line": row["cell_line"],
+                    "timepoint_h": tp,
+                    "pred_viability_pct": round(predicted_viability_pct(row["prism_log2fc"], tp), 1),
+                }
+            )
+    return pl.DataFrame(rows)
+
+
 @app.cell
 def _():
     # Engine: PRISM viability at the dose nearest each drug's task dose, for both lines.
-    viab_features = dataset_features(PRISM_VIAB)
-    signal_rows = []
-    for _c in PANEL:
-        _pick = nearest_dose_label(viab_features, _c["prism"], _c["dose_uM"])
-        _label, _picked_uM = _pick if _pick else (None, None)
-        _vals = two_line_values(PRISM_VIAB, _label) if _label else {_k: None for _k in CELL_LINES}
-        for _line, _log2fc in _vals.items():
-            signal_rows.append(
-                {
-                    "drug": _c["drug"],
-                    "cell_line": _line,
-                    "dose_uM": _c["dose_uM"],
-                    "prism_dose_uM": _picked_uM,
-                    "prism_log2fc": _log2fc,
-                    "prism_viab_pct": round(100.0 * 2.0**_log2fc, 1) if _log2fc is not None else None,
-                }
-            )
-    prism_signal = pl.DataFrame(signal_rows)
-    mo.md(
-        "## The PRISM signal\n\n"
-        "Dose-resolved PRISM log2 fold-change at the curve point nearest each task dose "
-        "(`prism_dose_uM`), and the implied fractional viability. All 12/12 compounds resolve for "
-        "both lines. This single number per (drug, line) is the only measured input to the prediction."
+    prism_signal = prism_dose_signal()
+    mo.vstack(
+        [
+            mo.md(
+                "## The PRISM signal\n\n"
+                "Dose-resolved PRISM log2 fold-change at the curve point nearest each task dose "
+                "(`prism_dose_uM`), and the implied fractional viability. All 12/12 compounds resolve for "
+                "both lines. This single number per (drug, line) is the only measured input to the prediction."
+            ),
+            mo.ui.table(prism_signal.sort(["cell_line", "prism_log2fc"]), page_size=12),
+        ]
     )
-    mo.ui.table(prism_signal.sort(["cell_line", "prism_log2fc"]), page_size=12)
     return (prism_signal,)
 
 
 @app.cell
 def _(prism_signal):
-    # Predicted % viability for every (drug, line, timepoint): apply the kinetic factor.
-    pred_rows = []
-    for _row in prism_signal.iter_rows(named=True):
-        if _row["prism_log2fc"] is None:
-            continue
-        for _tp in (24, 48):
-            pred_rows.append(
-                {
-                    "condition": _row["drug"],
-                    "cell_line": _row["cell_line"],
-                    "timepoint_h": _tp,
-                    "pred_viability_pct": round(predicted_viability_pct(_row["prism_log2fc"], _tp), 1),
-                }
-            )
-    predictions = pl.DataFrame(pred_rows)
-    pred_via = {(r["condition"], r["cell_line"], r["timepoint_h"]): r["pred_viability_pct"] for r in pred_rows}
-    mo.md(
-        "## Predicted viability (the submission's raw prediction)\n\n"
-        "One predicted % viability per condition x cell line x timepoint. The kinetic factor makes "
-        "24h less killed than 48h; it cannot reorder drugs within a (line, timepoint) - that order "
-        "is fixed by the PRISM dose signal."
+    # Predicted % viability for every (drug, line, timepoint) - reuse the already-pulled signal.
+    predictions = panel_predictions(prism_signal)
+    pred_via = {
+        (r["condition"], r["cell_line"], r["timepoint_h"]): r["pred_viability_pct"]
+        for r in predictions.iter_rows(named=True)
+    }
+    mo.vstack(
+        [
+            mo.md(
+                "## Predicted viability (the submission's raw prediction)\n\n"
+                "One predicted % viability per condition x cell line x timepoint. The kinetic factor makes "
+                "24h less killed than 48h; it cannot reorder drugs within a (line, timepoint) - that order "
+                "is fixed by the PRISM dose signal."
+            ),
+            mo.ui.table(predictions.sort(["cell_line", "timepoint_h", "pred_viability_pct"]), page_size=12),
+        ]
     )
-    mo.ui.table(predictions.sort(["cell_line", "timepoint_h", "pred_viability_pct"]), page_size=12)
     return pred_via, predictions
 
 
@@ -296,103 +321,80 @@ def _(pred_via):
         .select("rank", "condition", "concentration", "viability_pct")
         .sort("rank")
     )
-    mo.md(
-        f"## Built {len(filled)} submissions -> `{SUB_DIR.relative_to(NOTEBOOK_DIR.parent)}/task_*/`\n\n"
-        "Each task dir holds `output.json` (the filled template) and `reasoning.md` (the trace the "
-        "Karman `submit_response` tool wants). Example: task 1.3 (A375, 48h), rank 1 = strongest effect:"
+    mo.vstack(
+        [
+            mo.md(
+                f"## Built {len(filled)} submissions -> `{SUB_DIR.relative_to(NOTEBOOK_DIR.parent)}/task_*/`\n\n"
+                "Each task dir holds `output.json` (the filled template) and `reasoning.md` (the trace the "
+                "Karman `submit_response` tool wants). Example: task 1.3 (A375, 48h), rank 1 = strongest effect:"
+            ),
+            mo.ui.table(example, page_size=12),
+        ]
     )
-    mo.ui.table(example, page_size=12)
     return (filled,)
 
 
 @app.cell
-def _(predictions):
-    # Self-score: line each task's predicted viability up against the local oracle viability.
-    oracle = pl.concat(
+def _(filled):
+    # Render each task's reasoning trace INLINE, so the rationale reads directly in the notebook /
+    # molab. This is the same text written to each task's reasoning.md and submitted with it.
+    _traces = {f"Task {_tid}": mo.md(build_reasoning(_out)) for _tid, _out in filled.items()}
+    mo.vstack(
         [
-            pl.read_csv(ORACLE[_tp])
-            .select("cell_line", "condition", "viability_pct")
-            .rename({"viability_pct": "oracle_viability_pct"})
-            .with_columns(timepoint_h=pl.lit(_tp))
-            for _tp in (24, 48)
+            mo.md(
+                "## Reasoning traces (inline)\n\n"
+                "The rationale submitted with each task, rendered here so it reads without opening the "
+                "`reasoning.md` files. Expand a task for its method, predicted ranking, and caveats."
+            ),
+            mo.accordion(_traces),
         ]
     )
-    joined = predictions.join(oracle, on=["condition", "cell_line", "timepoint_h"], how="inner")
-
-    score_rows = []
-    for _task_id, _line, _tp in SINGLE_TASKS:
-        _sub = (
-            joined
-            if _task_id == "1.5"
-            else joined.filter((pl.col("cell_line") == _line) & (pl.col("timepoint_h") == _tp))
-        )
-        _pred, _truth = _sub["pred_viability_pct"].to_list(), _sub["oracle_viability_pct"].to_list()
-        score_rows.append(
-            {
-                "task": _task_id,
-                "scope": "pooled (2 lines x 2 timepoints)" if _task_id == "1.5" else f"{_line} {_tp}h",
-                "n": len(_pred),
-                "spearman": round(spearmanr(_pred, _truth).statistic, 3),
-                "kendall_tau_b": round(kendalltau(_pred, _truth).statistic, 3),
-            }
-        )
-    scores = pl.DataFrame(score_rows)
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    scores.write_csv(OUT_DIR / "scores.csv")
-    joined.write_csv(OUT_DIR / "predicted_vs_oracle.csv")
-    mo.md(
-        "## Self-score against the local oracle\n\n"
-        "Rank agreement of our predicted viability vs the measured oracle, per task (proxy for the "
-        "benchmark's tie-band scorer). Higher = more of that task is recoverable from public data; "
-        "the gap to 1.0 is the residual difficulty. **A real contestant cannot compute this** - the "
-        "oracle is private; here it is our internal check."
-    )
-    mo.ui.table(scores, page_size=8)
-    return joined, scores
-
-
-@app.cell
-def _(joined):
-    chart = (
-        alt.Chart(joined.with_columns(label=pl.format("{} {}h", pl.col("cell_line"), pl.col("timepoint_h"))))
-        .mark_circle(size=90, opacity=0.8)
-        .encode(
-            x=alt.X("pred_viability_pct:Q", title="predicted % viability (PRISM-grounded)"),
-            y=alt.Y("oracle_viability_pct:Q", title="oracle % viability (measured)"),
-            color=alt.Color("label:N", title="line / timepoint"),
-            tooltip=["condition", "cell_line", "timepoint_h", "pred_viability_pct", "oracle_viability_pct"],
-        )
-        .properties(width=420, height=360)
-    )
-    mo.md(
-        "## Predicted vs measured viability\n\n"
-        "Each point is one condition across all four per-task slices. A positive trend means the "
-        "submission and the wet lab agree; the 24h points (predicted >55%) and 48h points separate "
-        "along x by the kinetic factor."
-    )
-    mo.ui.altair_chart(chart)
     return
 
 
 @app.cell
-def _(filled, scores):
-    a375_48 = scores.filter(pl.col("task") == "1.3")["spearman"][0]
-    lox_48 = scores.filter(pl.col("task") == "1.4")["spearman"][0]
-    pooled = scores.filter(pl.col("task") == "1.5")["spearman"][0]
+def _(predictions):
+    # The submission's own prediction - no ground truth: predicted viability per drug, by line/timepoint.
+    chart = (
+        alt.Chart(predictions)
+        .mark_circle(size=90, opacity=0.85)
+        .encode(
+            x=alt.X("pred_viability_pct:Q", title="predicted % viability (PRISM-grounded; lower = stronger)"),
+            y=alt.Y("condition:N", sort="x", title=None),
+            color=alt.Color("timepoint_h:N", title="timepoint (h)"),
+            tooltip=["condition", "cell_line", "timepoint_h", "pred_viability_pct"],
+        )
+        .properties(width=300, height=320)
+        .facet(column=alt.Column("cell_line:N", title=None))
+    )
+    mo.vstack(
+        [
+            mo.md(
+                "## Predicted viability across the panel\n\n"
+                "The submission's prediction only (no ground truth). Lower = stronger predicted effect; "
+                "24h sits higher than 48h by the kinetic factor. Drugs sharing a PRISM signal cluster together."
+            ),
+            mo.ui.altair_chart(chart),
+        ]
+    )
+    return
+
+
+@app.cell
+def _(filled):
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     summary = {
         "description": (
             "A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent "
             "tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM "
-            "fold-change plus a 24h/48h kinetic factor; self-scored against the local oracle."
+            "fold-change plus a 24h/48h kinetic factor. Public data only - no oracle access."
         ),
         "numbers": {
             "tasks": [t[0] for t in SINGLE_TASKS],
-            "spearman_A375_48h": a375_48,
-            "spearman_LOXIMVI_48h": lox_48,
-            "spearman_pooled_1_5": pooled,
+            "compounds": len(PANEL),
+            "conditions_task_1_5": len(filled["1.5"]["rankings"]),
         },
-        "files": [f"submission/task_{t[0]}/{f}" for t in filled for f in ("output.json", "reasoning.md")]
-        + ["scores.csv", "predicted_vs_oracle.csv"],
+        "files": [f"submission/task_{t[0]}/{f}" for t in filled for f in ("output.json", "reasoning.md")],
     }
     (OUT_DIR / "summary.json").write_text(json.dumps(summary, indent=2))
     mo.md(f"```json\n{json.dumps(summary, indent=2)}\n```")
@@ -404,22 +406,20 @@ def _():
     mo.md(r"""
     ## What this submission can and cannot do
 
-    - **The ranking is the load-bearing prediction**, and it comes entirely from PRISM measured
-      drug response in these two lines - the strongest public signal available. The grader uses
-      `rank` when present, so the predicted % viability is a readable secondary.
-    - **It cannot reorder drugs between 24h and 48h.** PRISM has one timepoint; our kinetic factor
-      is a uniform scaling, so the within-line ordering is identical at both timepoints. The oracle
-      *does* reorder (e.g. Panobinostat overtakes Sapanisertib by 48h) - that drug-specific kinetics
-      is a real part of the challenge that public sensitivity data does not carry.
-    - **Absolute viability is approximate.** PRISM is a ~5-day pooled screen, the oracle a 48h
-      single-dose CellTiter-Glo, and the dose grid is coarse (4x steps), so the level can be off
-      even where the ranking is right (Panobinostat is the clearest miss).
-    - **LOXIMVI is the harder line** - its predicted ranking agrees with the oracle less than A375's.
+    - **The ranking is the load-bearing prediction**, grounded entirely in PRISM measured drug
+      response in these two lines - the strongest public signal available. The grader uses `rank`
+      when present, so the predicted % viability is a readable secondary.
+    - **It cannot reorder drugs between 24h and 48h.** PRISM has one timepoint; the kinetic factor is
+      a uniform scaling, so the within-line ordering is identical at both timepoints. Drug-specific
+      kinetics (some compounds act faster than others) is a known blind spot of this method.
+    - **Absolute viability is approximate.** PRISM is a ~5-day pooled screen on a coarse 4x dose grid,
+      not a 48h single-dose CellTiter-Glo, so the predicted level can be off even where the ranking holds.
+    - **HDAC potency is under-represented.** Panobinostat's dose-matched PRISM point understates its
+      true effect (pan-HDAC polypharmacology), so its rank is the least certain - flagged in every trace.
 
     ## To extend
 
-    - Swap the rank signal to dose-collapsed PRISM **AUC** and compare self-scores - AUC integrates
-      the whole curve and ranked A375 better in earlier analysis, at the cost of a dose-specific level.
+    - Swap the rank signal to dose-collapsed PRISM **AUC** (integrates the whole curve) and submit that variant.
     - Encode a per-drug kinetic prior (BRAF/MEK inhibitors act slower than mTOR/HDAC) so the 24h and
       48h rankings can differ - the one thing this submission structurally cannot predict.
     - Ensemble PRISM with GDSC2 and CTD^2 (also in Breadbox for these lines) and submit the consensus.
