@@ -1,5 +1,5 @@
 {
-  "description": "A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM fold-change plus a 24h/48h kinetic factor. Public data only - no oracle access.",
+  "description": "A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM fold-change plus a 24h/48h kinetic factor. Public data only.",
   "numbers": {
     "tasks": [
       "1.1",

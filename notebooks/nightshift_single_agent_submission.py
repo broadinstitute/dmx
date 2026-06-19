@@ -81,10 +81,9 @@ with app.setup:
                 return pl.DataFrame()
             return pl.DataFrame({"depmap_id": list(values.keys()), value_name: list(values.values())})
 
-    # The nightshift benchmark task prompts live next to this catalog. We read ONLY the answer-key-free
-    # templates here - never the oracle. Scoring is the grader's job (see nightshift_single_agent_eval).
-    NIGHTSHIFT = NOTEBOOK_DIR.parent.parent / "nightshift-dev"
-    TASKS_DIR = NIGHTSHIFT / "data" / "raw" / "tasks"
+    # The answer-key-free task templates are fetched from the live Karman benchmark server, so this
+    # notebook is fully self-contained - no local files, no sibling checkout.
+    TASKS_URL = "https://mcp.karmanai.org/tasks"
 
     OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_single_agent_submission"
     SUB_DIR = OUT_DIR / "submission"
@@ -106,7 +105,7 @@ with app.setup:
 
     # Kinetic factor: PRISM is a ~5-day endpoint; the tasks read at 24h / 48h. We treat PRISM's
     # killing as the 48h magnitude (factor 1.0) and attenuate the 24h prediction toward baseline.
-    # This is a stated prior, NOT fit to the oracle; it only shifts absolute level and how 24h/48h
+    # This is a stated prior, not tuned to any measured result; it only shifts absolute level and how 24h/48h
     # interleave in the pooled 1.5 ranking - it cannot reorder drugs within one (line, timepoint).
     KINETIC_FACTOR = {24: 0.55, 48: 1.0}
 
@@ -147,9 +146,7 @@ def _():
     3. Rank each task's conditions by predicted viability (1 = strongest = lowest viability).
 
     It writes the five populated `output.json` submissions plus a `reasoning.md` trace for each,
-    using **only public data - no oracle access** - exactly as the task requires. Scoring against
-    the wet-lab ground truth is a separate, organizer-side step (`nightshift_single_agent_eval`);
-    a real contestant cannot do it, so it does not belong here.
+    using only public data - exactly what the task asks for.
     """)
     return
 
@@ -189,6 +186,20 @@ def predicted_viability_pct(prism_log2fc: float, timepoint_h: int) -> float:
     effect = max(0.0, 1.0 - 2.0**prism_log2fc)  # growth (>baseline) counts as zero killing
     viability = 100.0 * (1.0 - KINETIC_FACTOR[timepoint_h] * effect)
     return max(0.0, min(110.0, viability))
+
+
+@app.function
+def load_task_template(task_id: str) -> dict:
+    """Fetch a task's answer-key-free output.json template from the live Karman benchmark server."""
+    import requests  # local import: in-repo the module-level requests import lives only in the fallback branch
+
+    resp = requests.get(
+        f"{TASKS_URL}/{task_id}/output.json",
+        headers={"Accept": "application/json", "User-Agent": "dmx/0.1 (+https://github.com/broadinstitute/dmx)"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 @app.function
@@ -326,7 +337,7 @@ def build_reasoning(filled: dict) -> str:
 
 {filled["description"]}
 
-## Method (public-data lookup, no oracle access)
+## Method (public-data lookup)
 
 This ranking is grounded entirely in **DepMap PRISM Repurposing Secondary**, a measured
 small-molecule viability screen, for the exact cell lines in this task (A375 = ACH-000219,
@@ -357,7 +368,7 @@ def _(pred_via):
     SUB_DIR.mkdir(parents=True, exist_ok=True)
     filled = {}
     for _task_id, _line, _tp in SINGLE_TASKS:
-        _template = json.loads((TASKS_DIR / f"task_{_task_id}" / "output.json").read_text())
+        _template = load_task_template(_task_id)
         _out = fill_submission(_template, pred_via)
         filled[_task_id] = _out
         _dest = SUB_DIR / f"task_{_task_id}"
@@ -436,7 +447,7 @@ def _(filled):
         "description": (
             "A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent "
             "tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM "
-            "fold-change plus a 24h/48h kinetic factor. Public data only - no oracle access."
+            "fold-change plus a 24h/48h kinetic factor. Public data only."
         ),
         "numbers": {
             "tasks": [t[0] for t in SINGLE_TASKS],
