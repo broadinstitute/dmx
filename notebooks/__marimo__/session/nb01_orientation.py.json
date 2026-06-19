@@ -1,13 +1,13 @@
 {
   "version": "1",
   "metadata": {
-    "marimo_version": "0.23.5",
-    "script_metadata_hash": "7c7522566fe0e0599e5bffbb01d41170"
+    "marimo_version": "0.23.10",
+    "script_metadata_hash": "b0e2b644072a031a97ba2cd55592f0c3"
   },
   "cells": [
     {
       "id": "setup",
-      "code_hash": "1d0db38904205bec4d6f6f6a1f6cec3e",
+      "code_hash": "18ecc791f146785b1b3ffe4f598e0270",
       "outputs": [
         {
           "type": "data",
@@ -20,12 +20,12 @@
     },
     {
       "id": "Hbol",
-      "code_hash": "47d478415691dc71594710d354409965",
+      "code_hash": "5850e372ee8c4fd457d7801f985a0f42",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"nb01-orientation\">nb01 - orientation</h1>\n<span class=\"paragraph\">dmx is a marimo catalog for the public DepMap Breadbox API. Breadbox is the\nREST layer behind the DepMap Portal: datasets, dimensions, matrix values,\ntabular metadata, context expressions, two-class comparisons, and\nprecomputed associations.</span>\n<span class=\"paragraph\">The catalog is intentionally small. Each notebook teaches one move and\nexposes the helpers it introduces as <code>@app.function</code>s so later notebooks\ncan import them.</span></span>"
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"nb01-orientation\">nb01 - orientation</h1>\n<span class=\"paragraph\">dmx is a marimo catalog for the public <strong>DepMap Breadbox API</strong>. Breadbox is the\nREST layer behind the <a href=\"https://depmap.org/portal/\" rel=\"noopener noreferrer\" target=\"_blank\">DepMap Portal</a>: datasets,\ndimensions, matrix values, tabular metadata, context expressions, two-class\ncomparisons, and precomputed associations - genome-scale perturbation screens,\nomics, drug sensitivity, and cell-line metadata for cancer-dependency analysis.</span>\n<span class=\"paragraph\">The catalog is intentionally small. Each notebook teaches one move and exposes\nthe helpers it introduces as <code>@app.function</code>s so later notebooks can import\nthem. By default dmx targets <code>https://depmap.org/portal/breadbox</code>, which needs\nno API key for these read-only examples.</span></span>"
           }
         }
       ],
@@ -33,12 +33,12 @@
     },
     {
       "id": "MJUe",
-      "code_hash": "1ac280caef559d5bbc06dccdfe48542c",
+      "code_hash": "9bf9bbbbee9273786f3885bbdbc47323",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"catalog-map\">Catalog map</h2>\n<table>\n<thead>\n<tr>\n<th>Notebook</th>\n<th>Move</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>nb02_dataset_discovery.py</code></td>\n<td>Breadbox HTTP helpers, dataset discovery, entity search</td>\n</tr>\n<tr>\n<td><code>nb03_gene_dependency_profile.py</code></td>\n<td>Gene -&gt; Chronos dependency profile across cell lines</td>\n</tr>\n<tr>\n<td><code>nb04_context_comparison.py</code></td>\n<td>Context expression -&gt; in/out dependency comparison</td>\n</tr>\n<tr>\n<td><code>nb05_association_query.py</code></td>\n<td>Query precomputed associations for a dependency or drug slice</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">First composition target: given a gene, find cancer contexts where its\ndependency is selective, annotate the relevant cell lines, and surface\ncorrelated genomic or drug features.</span></span>"
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"catalog-map\">Catalog map</h2>\n<table>\n<thead>\n<tr>\n<th>Notebook</th>\n<th>Move</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>nb02_dataset_discovery.py</code></td>\n<td>Breadbox HTTP helpers (<code>bb_get</code>, <code>bb_post</code>), dataset discovery, entity search</td>\n</tr>\n<tr>\n<td><code>nb03_gene_dependency_profile.py</code></td>\n<td>Gene -&gt; Chronos dependency profile across cell lines, joined to model metadata</td>\n</tr>\n<tr>\n<td><code>nb04_context_comparison.py</code></td>\n<td>Context expression -&gt; in/out dependency comparison</td>\n</tr>\n<tr>\n<td><code>nb05_association_query.py</code></td>\n<td>Query precomputed associations for a dependency or drug slice</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">First composition target: given a gene, find cancer contexts where its\ndependency is selective, annotate the relevant cell lines, and surface\ncorrelated genomic or drug features.</span></span>"
           }
         }
       ],
@@ -52,6 +52,45 @@
           "type": "data",
           "data": {
             "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"breadbox-surfaces-this-catalog-starts-with\">Breadbox surfaces this catalog starts with</h2>\n<ul>\n<li>Dataset discovery: <code>data_types/</code>, <code>datasets/</code>, <code>types/dimensions</code></li>\n<li>Entity search: <code>datasets/dimensions/</code></li>\n<li>Matrix retrieval: <code>datasets/matrix/{dataset_id}</code></li>\n<li>Tabular metadata: <code>datasets/tabular/{dataset_id}</code></li>\n<li>Context expressions: <code>temp/context</code></li>\n<li>Associations: <code>temp/associations/query-slice</code></li>\n</ul>\n<span class=\"paragraph\">Public reads do not require authentication. The notebooks call Breadbox\ndirectly with <code>requests</code>.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "55646cfedb7c891a59c6c78f2f37c5c0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "79d265a6eca540d24708d27feea5a159",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"live-check\">Live check</h2>\n<span class=\"paragraph\">Breadbox returned <strong>25</strong> dimension types: MetMap site, ModelCondition, Screen metadata, antibody_v2, antibody_v3, ccle_proteomics, compound_dose, compound_sample, compound_v2, ctd2_sample, depmap_model, gdsc1_sample, gdsc2_sample, gene, generic, protein_v5, rbbs_metadata_v2, rrbs_metadata_v2, sanger_combination_anchor_viability_feature, sanger_combination_combo_fit_feature, sanger_combination_combo_viability_feature, sanger_combination_library_fit_feature, sanger_combination_library_viability_feature, screen, sgdc_compound.\nThese are the entity kinds the catalog searches, profiles, and compares.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "c00ba98e5729ef56ffe25c8fccb5ccac",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"to-extend\">To extend</h2>\n<ul>\n<li>Discover which gene x DepMap-model matrix datasets exist (e.g. <code>Chronos_Combined</code>) and search for a gene of interest (nb02).</li>\n<li>Pull one gene's dependency profile across cell lines and rank lineages by mean Chronos score (nb03).</li>\n<li>Define a lineage or mutation context and compare a gene's dependency inside vs outside it (nb04).</li>\n<li>Query precomputed associations for a dependency slice to surface correlated features across modalities (nb05).</li>\n</ul></span>"
           }
         }
       ],

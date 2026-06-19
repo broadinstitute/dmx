@@ -10,7 +10,7 @@
 
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.10"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -21,11 +21,11 @@ with app.setup:
     import marimo as mo
     import polars as pl
 
-    NOTEBOOK_DIR = Path(__file__).parent
+    NOTEBOOK_DIR = Path(__file__).resolve().parent
     if str(NOTEBOOK_DIR) not in sys.path:
         sys.path.insert(0, str(NOTEBOOK_DIR))
 
-    from nb02_dataset_discovery import bb_post, records_frame
+    from nb02_dataset_discovery import bb_post, records_frame  # noqa: E402
 
     DEFAULT_DATASET = "Chronos_Combined"
     DEFAULT_IDENTIFIER = "KRAS"
@@ -130,6 +130,18 @@ def _(associations):
     else:
         chart_output = mo.md("Association response did not include the expected plotting columns.")
     chart_output
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## To extend
+
+    - Swap the slice for a drug-sensitivity dataset identifier to find genes correlated with a compound response.
+    - Filter associations to a single modality (e.g. expression only) and rank by correlation sign.
+    - Chain from nb03/nb04: take a selectively-essential gene and ask what co-dependencies travel with it.
+    """)
     return
 
 

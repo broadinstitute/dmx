@@ -9,15 +9,23 @@
 
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.10"
 app = marimo.App(width="medium")
 
 with app.setup:
+    import time
+
     import marimo as mo
     import polars as pl
     import requests
 
     BASE_URL = "https://depmap.org/portal/breadbox"
+    # The portal nginx 403s the default python-requests User-Agent, so every call
+    # sends an identifying one. Breadbox also intermittently 504s (gateway
+    # timeout); bb_get / bb_post retry on 5xx and connection errors.
+    USER_AGENT = "dmx/0.1 (+https://github.com/broadinstitute/dmx)"
+    MAX_RETRIES = 6
+    RETRY_BACKOFF = 3.0
 
 
 @app.cell(hide_code=True)
@@ -26,19 +34,22 @@ def _():
     # nb02 - dataset discovery
 
     Breadbox is easiest to compose against when the agent can discover the
-    available datasets and dimensions first. This notebook owns the shared
-    HTTP helpers for the dmx catalog and demonstrates the first discovery
-    calls.
+    available datasets and dimensions first. This notebook owns the shared HTTP
+    helpers for the dmx catalog and demonstrates the first discovery calls.
+
+    The helpers are hardened against two portal quirks: a non-default
+    `User-Agent` (the default is 403'd) and transient `5xx` gateway timeouts
+    (retried with backoff).
     """)
     return
 
 
 @app.function
 def breadbox_headers() -> dict[str, str]:
-    """Return headers for Breadbox requests."""
+    """Return headers for Breadbox requests (identifying User-Agent required)."""
     return {
         "Accept": "application/json",
-        "User-Agent": "dmx/0.1 (+https://github.com/broadinstitute/dmx)",
+        "User-Agent": USER_AGENT,
     }
 
 
@@ -49,29 +60,46 @@ def breadbox_url(endpoint: str) -> str:
 
 
 @app.function
+def bb_request(method: str, endpoint: str, *, params: dict | None = None, json: dict | None = None) -> object:
+    """Call Breadbox with retries on 5xx and connection errors, return decoded JSON.
+
+    The DepMap portal occasionally returns 504 Gateway Time-out on otherwise
+    valid reads, so retry the same request a few times with linear backoff. 4xx
+    is a real client error and is raised immediately.
+    """
+    url = breadbox_url(endpoint)
+    timeout = 120 if method == "POST" else 60
+    last_err: str | None = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.request(
+                method,
+                url,
+                params=params,
+                json=json,
+                headers=breadbox_headers(),
+                timeout=timeout,
+            )
+            if response.status_code < 500:
+                response.raise_for_status()
+                return response.json()
+            last_err = f"HTTP {response.status_code}"
+        except requests.RequestException as exc:
+            last_err = str(exc)
+        time.sleep(RETRY_BACKOFF * (attempt + 1))
+    raise RuntimeError(f"Breadbox {method} {endpoint} failed after {MAX_RETRIES} retries: {last_err}")
+
+
+@app.function
 def bb_get(endpoint: str, params: dict | None = None) -> object:
     """GET from Breadbox and return decoded JSON."""
-    response = requests.get(
-        breadbox_url(endpoint),
-        params=params,
-        headers=breadbox_headers(),
-        timeout=60,
-    )
-    response.raise_for_status()
-    return response.json()
+    return bb_request("GET", endpoint, params=params)
 
 
 @app.function
 def bb_post(endpoint: str, body: dict) -> object:
     """POST JSON to Breadbox and return decoded JSON."""
-    response = requests.post(
-        breadbox_url(endpoint),
-        json=body,
-        headers=breadbox_headers(),
-        timeout=120,
-    )
-    response.raise_for_status()
-    return response.json()
+    return bb_request("POST", endpoint, json=body)
 
 
 @app.function
@@ -152,6 +180,18 @@ def _():
     kras_hits = search_dimensions("KRAS", type_name="gene", limit=5)
     mo.md("## Search example: KRAS")
     mo.ui.table(kras_hits, page_size=5)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## To extend
+
+    - Pull one gene's dependency profile from a `Chronos_Combined`-style matrix dataset and join to model metadata (nb03).
+    - Define a lineage or mutation context with `temp/context` and compare dependency inside vs outside (nb04).
+    - Query `temp/associations/query-slice` for a dependency slice to surface correlated features (nb05).
+    """)
     return
 
 

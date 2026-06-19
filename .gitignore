@@ -1,13 +1,30 @@
-.DS_Store
-__pycache__/
-*.pyc
-.venv/
-.env
-.ruff_cache/
-.direnv/
-.marimo/
-__marimo__/
+# Data contents (structure tracked via .gitkeep) - for fetched/large data only.
+data/**
+!data/**/
+!data/**/.gitkeep
+# Index envelopes are kilobyte metadata the index notebook discovers - keep them
+# tracked even though the fetched/large data beside them is ignored.
+!data/processed/**/summary.json
+
+# marimo caches and exported session snapshots.
+# Ignore the cache tree by default, but DO track the session JSON snapshots: dmx
+# commits them so the molab preview renders cell outputs without re-executing
+# (matches broadinstitute/dmx). These can carry random widget ids -> noisy diffs.
+notebooks/__marimo__/**
 !notebooks/__marimo__/
 !notebooks/__marimo__/session/
 !notebooks/__marimo__/session/*.json
-data/
+
+# Python and tool caches
+.venv/
+uv.lock
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+# Installed skills: recorded in the tracked skills-lock.json, NOT vendored.
+.agents/
+.claude/skills/*
+
+# Local cache
+.cache/

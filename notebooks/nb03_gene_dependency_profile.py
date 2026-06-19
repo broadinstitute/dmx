@@ -10,7 +10,7 @@
 
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.10"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -21,11 +21,11 @@ with app.setup:
     import marimo as mo
     import polars as pl
 
-    NOTEBOOK_DIR = Path(__file__).parent
+    NOTEBOOK_DIR = Path(__file__).resolve().parent
     if str(NOTEBOOK_DIR) not in sys.path:
         sys.path.insert(0, str(NOTEBOOK_DIR))
 
-    from nb02_dataset_discovery import bb_post
+    from nb02_dataset_discovery import bb_post  # noqa: E402
 
     DEFAULT_GENE = "KRAS"
     DEFAULT_DEPENDENCY_DATASET = "Chronos_Combined"
@@ -149,6 +149,18 @@ def _(lineage_summary):
         .properties(width=560, height=420)
     )
     mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## To extend
+
+    - Swap `DEFAULT_GENE` for another dependency (e.g. `BRAF`, `MYC`) and compare which lineages light up.
+    - Restrict to a single lineage and rank the most dependent cell lines for a gene (feeds nb04).
+    - Pull a second dataset (RNAi vs CRISPR) for the same gene and check concordance.
+    """)
     return
 
 

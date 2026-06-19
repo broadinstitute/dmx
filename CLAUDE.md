@@ -1,5 +1,4 @@
 # CLAUDE.md - dmx
 
-See `AGENTS.md` for the shared project guidance.
-This file exists so Claude Code discovers the same contract without duplicating it.
-All project guidance edits go in `AGENTS.md`, not here; keep this file thin.
+See [AGENTS.md](AGENTS.md) for all agent guidance.
+This file exists only so Claude Code discovers the contract; do not fork guidance here.

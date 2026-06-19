@@ -10,7 +10,7 @@
 
 import marimo
 
-__generated_with = "0.23.5"
+__generated_with = "0.23.10"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -21,12 +21,12 @@ with app.setup:
     import marimo as mo
     import polars as pl
 
-    NOTEBOOK_DIR = Path(__file__).parent
+    NOTEBOOK_DIR = Path(__file__).resolve().parent
     if str(NOTEBOOK_DIR) not in sys.path:
         sys.path.insert(0, str(NOTEBOOK_DIR))
 
-    from nb02_dataset_discovery import bb_post
-    from nb03_gene_dependency_profile import (
+    from nb02_dataset_discovery import bb_post  # noqa: E402
+    from nb03_gene_dependency_profile import (  # noqa: E402
         DEFAULT_DEPENDENCY_DATASET,
         matrix_feature,
         tabular_metadata,
@@ -167,6 +167,18 @@ def _(context_table):
         .properties(width=360, height=360)
     )
     mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## To extend
+
+    - Swap the lineage context for `mutation_lineage_context(gene, lineage)` to compare mutant vs wild-type dependency.
+    - Test whether a gene is selectively essential in its own mutant context (e.g. BRAF in BRAF-mutant melanoma).
+    - Feed the in-context cell lines into nb05 to find what else correlates with the dependency.
+    """)
     return
 
 

@@ -1,78 +1,58 @@
 # AGENTS.md - dmx
 
-Project-specific guidance for agents working in this repository.
-This is the public, runnable catalog of marimo notebooks for DepMap Breadbox analysis.
-Planning and cross-instance coordination live in the primary [`jx`](https://github.com/broadinstitute/jx) repo.
-
+Project-specific guidance for agents working in this catalog.
 `README.md` is the human entry point.
-The skills under `.claude/skills/` are the operational entry points: `getting-started` for first-run setup and `compose-notebook` for adding a new analysis.
+This catalog uses the shared vignette-catalog-skills (`vignette-catalog-setup`, `vignette-catalog-compose-notebook`); its specifics live in `catalog.toml`.
+
+## Skills (restore after clone)
+
+The catalog skills are installed via `npx skills add`, recorded in the tracked `skills-lock.json`, but **not vendored** -
+the install stores (`.agents/`, `.claude/skills/*`) are gitignored. A fresh clone has only the lock, so the on-disk
+skill content (and the `validate-notebook.sh` the rule below depends on) is missing until you restore it. Run once, from the repo root:
+
+    npx skills update
+
+This reconstitutes every skill the lock pins. Do this before relying on the skills or the validation rule.
+(This instruction lives here, in a tracked file, on purpose: a skill cannot bootstrap its own install.)
 
 ## Launching notebooks
 
-Always use `--sandbox` so the PEP 723 inline metadata is provisioned:
+Always use `--sandbox` so PEP 723 inline metadata is provisioned:
 
-```bash
-uvx marimo edit --sandbox notebooks/nbNN_*.py
-```
+    uvx marimo edit --sandbox notebooks/nbNN_*.py
 
 Do not improvise alternative launch commands.
-`--sandbox` is what makes `uvx marimo` read each notebook's `/// script` dependency block; without it every notebook fails with `ModuleNotFoundError`.
 
-## Validation Rule
+## Validation rule
 
-After composing or editing any notebook in `notebooks/`, launch it in a marimo sandbox kernel and run all cells before reporting the task complete.
-Static checks do not catch wrong endpoints, empty tables, stale API assumptions, or broken plots.
-
-Minimal launch:
-
-```bash
-PORT=$(python -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1])")
-env -u PYTHONPATH uvx marimo edit --sandbox --headless --no-token --port $PORT notebooks/nbNN_*.py
-```
-
-Then run static checks:
-
-```bash
-uvx ruff check notebooks/
-uvx ruff format notebooks/
-uvx marimo check notebooks/*.py
-```
-
-**Then, last, refresh the molab session snapshot** for any notebook whose source changed in this task:
-
-```bash
-env -u PYTHONPATH uvx marimo export session --sandbox notebooks/nbNN_*.py
-```
-
-Order matters.
-Session snapshots store a `code_hash` per cell, and molab attaches the stored output only when the snapshot hash matches the source cell.
-Any later edit to the notebook source - including a `ruff format` whitespace pass - shifts every `code_hash` and silently strips outputs in the public molab preview.
-Always regenerate snapshots **after** the final formatter / source edit, and commit the regenerated `.json` files in the same change that touched the `.py` files.
+After composing or editing any notebook, run the `validate-notebook.sh` bundled with the installed `vignette-catalog-compose-notebook` skill, passing the notebook path, then open it and look at the outputs.
+Static checks do not catch wrong outputs, empty tables, stale endpoints, broken plots, or sign-convention mistakes.
 
 ## Architecture
 
-- Catalog over library.
-  Helpers live as `@app.function` cells in numbered notebooks.
-  Later notebooks import from earlier notebooks by adding `notebooks/` to `sys.path`.
-- Breadbox access is direct REST via `requests`; public read-only examples need no API key, and the existing DepMap MCP tools are thin wrappers around the same endpoints.
-- Keep helpers close to API primitives: `requests`, `polars`, and small parsing functions.
-- Raw API responses should be summarized before printing.
-  Association and matrix endpoints can produce large payloads.
-- Do not add a Python package until repeated cross-notebook imports make the notebook-as-library pattern painful.
+- Catalog over library. Helpers are top-level `@app.function` cells in numbered notebooks; later notebooks import them via `sys.path`.
+- Data surface is `rest`: this catalog reaches DepMap data over the public Breadbox REST API (`https://depmap.org/portal/breadbox`) via `requests`, no auth for these read-only examples.
+- All HTTP goes through `bb_get` / `bb_post` in `nb02_dataset_discovery.py`. Import those rather than calling `requests` directly, so every call inherits the two hardening behaviors below.
+- Do not add a Python package until repeated cross-notebook imports make it painful.
+
+## Breadbox quirks (learned the hard way - keep `bb_get`/`bb_post` as the single choke point)
+
+- **A non-default `User-Agent` is required.** A bare `requests` call (default `python-requests/x.y` UA) gets a `403 Forbidden` from the portal nginx, returning an HTML error page, not JSON. `breadbox_headers()` sends an identifying UA; do not drop it.
+- **Breadbox 5xx's intermittently, and can go fully down.** Healthy reads still return transient `504 Gateway Time-out`, and during this catalog's first build the portal app tier was unreachable for ~an hour (edge up, app tier hanging - a portal outage, not a client or network problem; the separate Cloud Run DepMap MCP server stayed up). `bb_request` retries on `5xx` and connection errors with linear backoff; `4xx` is a real client error and raises immediately. If a whole composing session is timing out, check `https://depmap.org/portal/breadbox/types/dimensions` directly before assuming your code is wrong.
+- **Dataset ids are stable enough to hardcode for examples** (`Chronos_Combined`, `depmap_model_metadata`, `mutations_hotspot`), but they can drift across DepMap quarterly releases. When a matrix/tabular/context call 404s, re-discover ids with `nb02`'s `list_datasets()` / `search_dimensions()` rather than guessing.
 
 ## Conventions
 
-- Prose in `.md` files uses semantic line breaks: one sentence per line, no hard wrapping at a column count.
-  Markdown collapses single newlines inside a paragraph, so the rendered output is unchanged, but diffs stay local to the edited sentence instead of re-flowing every line below it.
-  Applies to `AGENTS.md`, `.claude/skills/**/SKILL.md`, and any other prose-heavy markdown we revise often.
+Semantic line breaks in markdown. ASCII-only. Conventional Commits. `ruff line-length = 120` is Python only.
 
-## When the Question Fits the Catalog
+## Canonical contract (read before editing)
 
-Almost every first DepMap request should compose existing helpers:
+The rules above are the headline subset. The full, canonical contract lives in the installed
+`vignette-catalog-compose-notebook` skill's `references/` - notebook conventions, the data
+contract, indexing, the `catalog.toml` schema, and marimo gotchas (that skill's SKILL.md indexes
+them). Read the relevant one before authoring or editing a notebook or its outputs; do not wait
+for the skill to be invoked. Restore with `npx skills update` if the skill store is empty.
 
-- "What datasets exist?" -> `nb02_dataset_discovery`
-- "Show KRAS dependency by lineage" -> `nb03_gene_dependency_profile`
-- "Is gene X selective in KRAS-mutant lung?" -> `nb04_context_comparison`
-- "What correlates with gene X dependency?" -> `nb05_association_query`
+## When the question fits the catalog
 
-Read `.claude/skills/compose-notebook/SKILL.md` before writing new analysis code.
+The notebook-to-question routing lives in the `[[vignette]]` table in `catalog.toml` - each notebook, its helpers, and what it does - which is the single source the `vignette-catalog-compose-notebook` skill reads. Do not mirror that table here; point at it.
