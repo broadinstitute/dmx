@@ -25,16 +25,23 @@ with app.setup:
     import marimo as mo
     import polars as pl
 
+    # Run live on molab (WASM/Pyodide): patch the stdlib so `requests` works over browser fetch.
+    try:  # no-op outside Pyodide
+        import pyodide_http  # noqa: F401
+
+        pyodide_http.patch_all()
+    except Exception:
+        pass
+
     NOTEBOOK_DIR = Path(__file__).resolve().parent
     if str(NOTEBOOK_DIR) not in sys.path:
         sys.path.insert(0, str(NOTEBOOK_DIR))
 
-    # In the dmx repo this notebook reuses the catalog's Breadbox helpers from nb02/nb03. Shared as a
-    # STANDALONE notebook (e.g. on molab) those siblings are absent, so fall back to inline definitions
-    # of the same two helpers - a deliberate duplication that keeps the notebook self-contained.
+    # In the dmx repo this notebook reuses the catalog's hardened Breadbox primitives from nb02.
+    # Shared as a STANDALONE notebook (e.g. on molab) that sibling is absent, so fall back to inline
+    # definitions of bb_get / bb_post - a deliberate duplication that keeps the notebook self-contained.
     try:
-        from nb02_dataset_discovery import dataset_features  # noqa: E402
-        from nb03_gene_dependency_profile import matrix_feature  # noqa: E402
+        from nb02_dataset_discovery import bb_get, bb_post  # noqa: E402
     except ImportError:
         import time  # noqa: E402
 
@@ -43,13 +50,14 @@ with app.setup:
         _BB_BASE = "https://depmap.org/portal/breadbox"
         _BB_HEADERS = {"Accept": "application/json", "User-Agent": "dmx/0.1 (+https://github.com/broadinstitute/dmx)"}
 
-        def _bb(method, endpoint, *, body=None):
+        def _bb(method, endpoint, *, params=None, body=None):
             # Identifying User-Agent (the portal 403s the default) + retry on transient 5xx / connection errors.
             for attempt in range(6):
                 try:
                     resp = requests.request(
                         method,
                         f"{_BB_BASE}/{endpoint.lstrip('/')}",
+                        params=params,
                         json=body,
                         headers=_BB_HEADERS,
                         timeout=120 if method == "POST" else 60,
@@ -62,24 +70,11 @@ with app.setup:
                 time.sleep(3.0 * (attempt + 1))
             raise RuntimeError(f"Breadbox {method} {endpoint} failed after retries")
 
-        def dataset_features(dataset_id):
-            """Inline fallback for nb02: list the features (compound/gene labels) in a matrix dataset."""
-            records = _bb("GET", f"datasets/features/{dataset_id}")
-            return pl.DataFrame(records, infer_schema_length=10_000) if records else pl.DataFrame()
+        def bb_get(endpoint, params=None):
+            return _bb("GET", endpoint, params=params)
 
-        def matrix_feature(dataset_id, feature_label, value_name="value"):
-            """Inline fallback for nb03: fetch one feature column across models from a matrix dataset."""
-            raw = _bb(
-                "POST",
-                f"datasets/matrix/{dataset_id}",
-                body={"features": [feature_label], "feature_identifier": "label"},
-            )
-            values = raw.get(feature_label)
-            if values is None and isinstance(raw, dict) and raw:
-                values = next(iter(raw.values()))
-            if not isinstance(values, dict):
-                return pl.DataFrame()
-            return pl.DataFrame({"depmap_id": list(values.keys()), value_name: list(values.values())})
+        def bb_post(endpoint, body):
+            return _bb("POST", endpoint, body=body)
 
     # The answer-key-free task templates are fetched from the live Karman benchmark server, so this
     # notebook is fully self-contained - no local files, no sibling checkout.
@@ -88,13 +83,40 @@ with app.setup:
     OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_single_agent_submission"
     SUB_DIR = OUT_DIR / "submission"
 
+    # The two melanoma lines and their DepMap model ids.
     CELL_LINES = {"A375": "ACH-000219", "LOXIMVI": "ACH-000750"}
 
-    # PRISM Repurposing Secondary, dose-resolved: value = log2 fold-change vs DMSO (more negative
-    # = more killing). The engine of this submission - measured drug response in the same two lines.
-    PRISM_VIAB = "576e1cb6-ac8d-4e29-bf15-0552c8665d72"
+    # DepMap datasets (ids are stable enough to hardcode for a report; re-discover via nb02 if a 404 appears).
+    PRISM_VIAB = (
+        "576e1cb6-ac8d-4e29-bf15-0552c8665d72"  # PRISM Repurposing Secondary (Viability), dose-resolved log2 FC
+    )
+    PRISM_AUC = "07b7bda9-ae00-43b3-bca1-336b9607f8f5"  # PRISM Repurposing Secondary (AUC), dose-collapsed
+    HOTSPOT = "a952ab7b-56c8-4aeb-872e-8ee02eeae042"  # Hotspot Mutations (value > 0 = mutated)
 
-    # The five single-agent tasks. (task_id, cell_line, timepoint_h); 1.5 is pooled across both.
+    # Kinetic factor: PRISM is a ~5-day endpoint; the tasks read at 24h / 48h. We treat PRISM's
+    # killing as the 48h magnitude (factor 1.0) and attenuate the 24h prediction toward baseline.
+    # A stated prior, not tuned to any measured result; it only shifts level and how 24h/48h interleave.
+    KINETIC_FACTOR = {24: 0.55, 48: 1.0}
+
+    # The 12 single agents: fixed nightshift dose, target node, and PRISM label (Sapanisertib is
+    # screened under its code MLN0128). Doses taken verbatim from the task prompts.
+    PANEL = [
+        {"drug": "Panobinostat", "target": "pan-HDAC", "prism": "PANOBINOSTAT", "dose_uM": 0.05},
+        {"drug": "Trametinib", "target": "MEK", "prism": "TRAMETINIB", "dose_uM": 0.01},
+        {"drug": "Dabrafenib", "target": "BRAF", "prism": "DABRAFENIB", "dose_uM": 0.1},
+        {"drug": "Encorafenib", "target": "BRAF", "prism": "ENCORAFENIB", "dose_uM": 0.1},
+        {"drug": "Cobimetinib", "target": "MEK", "prism": "COBIMETINIB", "dose_uM": 0.1},
+        {"drug": "Binimetinib", "target": "MEK", "prism": "BINIMETINIB", "dose_uM": 0.1},
+        {"drug": "TAK-733", "target": "MEK", "prism": "TAK-733", "dose_uM": 0.03},
+        {"drug": "Vemurafenib", "target": "BRAF", "prism": "VEMURAFENIB", "dose_uM": 1.0},
+        {"drug": "Regorafenib", "target": "multi-kinase", "prism": "REGORAFENIB", "dose_uM": 5.0},
+        {"drug": "Sapanisertib", "target": "mTOR", "prism": "MLN0128", "dose_uM": 0.5},
+        {"drug": "Capivasertib", "target": "AKT", "prism": "CAPIVASERTIB", "dose_uM": 5.0},
+        {"drug": "Alpelisib", "target": "PI3K", "prism": "ALPELISIB", "dose_uM": 5.0},
+    ]
+    DRUGS = [c["drug"] for c in PANEL]
+
+    # (task_id, cell_line, timepoint_h); 1.5 is pooled across both lines and both timepoints.
     SINGLE_TASKS = [
         ("1.1", "A375", 24),
         ("1.2", "LOXIMVI", 24),
@@ -103,52 +125,50 @@ with app.setup:
         ("1.5", None, None),
     ]
 
-    # Kinetic factor: PRISM is a ~5-day endpoint; the tasks read at 24h / 48h. We treat PRISM's
-    # killing as the 48h magnitude (factor 1.0) and attenuate the 24h prediction toward baseline.
-    # This is a stated prior, not tuned to any measured result; it only shifts absolute level and how 24h/48h
-    # interleave in the pooled 1.5 ranking - it cannot reorder drugs within one (line, timepoint).
-    KINETIC_FACTOR = {24: 0.55, 48: 1.0}
-
-    # The 12 single agents with their fixed nightshift dose and PRISM label (Sapanisertib is
-    # screened under its code MLN0128). Doses taken verbatim from the task prompts.
-    PANEL = [
-        {"drug": "Panobinostat", "prism": "PANOBINOSTAT", "dose_uM": 0.05},
-        {"drug": "Trametinib", "prism": "TRAMETINIB", "dose_uM": 0.01},
-        {"drug": "Dabrafenib", "prism": "DABRAFENIB", "dose_uM": 0.1},
-        {"drug": "Encorafenib", "prism": "ENCORAFENIB", "dose_uM": 0.1},
-        {"drug": "Cobimetinib", "prism": "COBIMETINIB", "dose_uM": 0.1},
-        {"drug": "Binimetinib", "prism": "BINIMETINIB", "dose_uM": 0.1},
-        {"drug": "TAK-733", "prism": "TAK-733", "dose_uM": 0.03},
-        {"drug": "Vemurafenib", "prism": "VEMURAFENIB", "dose_uM": 1.0},
-        {"drug": "Regorafenib", "prism": "REGORAFENIB", "dose_uM": 5.0},
-        {"drug": "Sapanisertib", "prism": "MLN0128", "dose_uM": 0.5},
-        {"drug": "Capivasertib", "prism": "CAPIVASERTIB", "dose_uM": 5.0},
-        {"drug": "Alpelisib", "prism": "ALPELISIB", "dose_uM": 5.0},
-    ]
-
 
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    # A DepMap-grounded submission to nightshift single-agent tasks 1.1-1.5
+    # Predicting drug response in BRAF-mutant melanoma, from public data alone
 
-    The nightshift tasks hand an agent a real melanoma viability experiment - cell line, the
-    12 compounds, their exact doses, the timepoint - and ask it to **predict** the % viability
-    and rank, from "known pharmacology, target, concentration, cell line, timepoint," with **no
-    readout data and no requesting raw data**. So a public-data lookup is the sanctioned move.
+    **A Night Shift submission, grounded end to end in [DepMap](https://depmap.org).**
 
-    This notebook *is* that lookup, made concrete. Tasks 1.1-1.4 are A375/LOXIMVI at 24h/48h;
-    1.5 pools all 48 conditions into one ranking. The engine is **PRISM Repurposing Secondary**
-    (DepMap), read at the screened concentration nearest each drug's task dose:
+    The [Night Shift / Karman](https://karmanai.org/) benchmark runs a real melanoma viability
+    experiment - two cell lines, 12 compounds at fixed doses, read at 24h and 48h - and asks an agent
+    to predict the ranking *before* the wet-lab readout exists, from public knowledge only. Tasks
+    1.1-1.4 are A375 / LOXIMVI at 24h / 48h; 1.5 pools all 48 conditions.
 
-    1. PRISM log2 fold-change at the matched dose -> predicted fractional viability `2**log2fc`.
-    2. A stated 24h/48h kinetic factor turns that into a predicted % viability per timepoint.
-    3. Rank each task's conditions by predicted viability (1 = strongest = lowest viability).
+    This notebook is that prediction, but it shows its work. Every number below is pulled live from
+    DepMap's Breadbox API - the cell-line identities, the measured PRISM dose-response curves, and how
+    these lines compare to the rest of the cancer cell-line panel - and only then turned into a ranked
+    prediction. Nothing is hand-entered; the notebook is self-contained and re-runs from scratch.
 
-    It writes the five populated `output.json` submissions plus a `reasoning.md` trace for each,
-    using only public data - exactly what the task asks for.
+    1. **The system** - confirm the two lines are BRAF-mutant melanoma, from DepMap.
+    2. **The evidence** - the PRISM dose-response curves the prediction reads.
+    3. **The context** - how sensitive these lines are versus ~700 others.
+    4. **The prediction** - dose-matched read + a kinetic prior -> a ranked submission per task.
+    5. **The reasoning** - the trace submitted with each task, inline.
     """)
     return
+
+
+@app.function
+def dataset_features(dataset_id: str) -> pl.DataFrame:
+    """List the features (compound/gene labels) available in a Breadbox matrix dataset."""
+    records = bb_get(f"datasets/features/{dataset_id}")
+    return pl.DataFrame(records, infer_schema_length=10_000) if records else pl.DataFrame()
+
+
+@app.function
+def matrix_feature(dataset_id: str, feature_label: str, value_name: str = "value") -> pl.DataFrame:
+    """Fetch one feature column (across all models) from a Breadbox matrix dataset."""
+    raw = bb_post(f"datasets/matrix/{dataset_id}", {"features": [feature_label], "feature_identifier": "label"})
+    values = raw.get(feature_label)
+    if values is None and isinstance(raw, dict) and raw:
+        values = next(iter(raw.values()))
+    if not isinstance(values, dict):
+        return pl.DataFrame()
+    return pl.DataFrame({"depmap_id": list(values.keys()), value_name: list(values.values())})
 
 
 @app.function
@@ -160,266 +180,343 @@ def two_line_values(dataset_id: str, feature_label: str) -> dict[str, float | No
 
 
 @app.function
-def nearest_dose_label(viab_features: pl.DataFrame, prism_name: str, target_uM: float) -> tuple[str, float] | None:
-    """Pick the dose-resolved PRISM feature nearest (in log10 uM) to the nightshift dose.
+def model_metadata(columns: list[str]) -> dict:
+    """Fetch cell-line metadata columns from Breadbox (column-oriented {col: {model_id: value}})."""
+    return bb_post("datasets/tabular/depmap_model_metadata", {"columns": columns})
 
-    Labels are 'NAME <dose> uM' with per-compound rounding, so match the live feature list rather
-    than reconstructing a label. Returns (label, picked_uM); a dose exactly between two grid points
-    is a genuine tie (round before comparing) broken to the lower, more conservative dose.
-    """
-    pattern = re.compile(rf"^{re.escape(prism_name)} ([\d.]+) uM$")
-    candidates = [(float(m.group(1)), label) for label in viab_features["label"] if (m := pattern.match(label))]
-    if not candidates:
-        return None
-    candidates.sort(key=lambda d: (round(abs(math.log10(d[0]) - math.log10(target_uM)), 6), d[0]))
-    dose_uM, label = candidates[0]
-    return label, dose_uM
+
+@app.function
+def nearest_dose(available: list[float], target_uM: float) -> float:
+    """Pick the screened concentration nearest (in log10 uM) to a target; ties break to the lower dose."""
+    return min(available, key=lambda d: (round(abs(math.log10(d) - math.log10(target_uM)), 6), d))
 
 
 @app.function
 def predicted_viability_pct(prism_log2fc: float, timepoint_h: int) -> float:
-    """Predicted % viability at a timepoint from a PRISM log2 fold-change.
-
-    PRISM fractional viability is 2**log2fc; the killed fraction (effect) is scaled by the
-    timepoint's kinetic factor and subtracted from baseline. Clipped to [0, 110].
-    """
+    """Predicted % viability at a timepoint from a PRISM log2 fold-change (2**log2fc, scaled by kinetics)."""
     effect = max(0.0, 1.0 - 2.0**prism_log2fc)  # growth (>baseline) counts as zero killing
-    viability = 100.0 * (1.0 - KINETIC_FACTOR[timepoint_h] * effect)
-    return max(0.0, min(110.0, viability))
+    return max(0.0, min(110.0, 100.0 * (1.0 - KINETIC_FACTOR[timepoint_h] * effect)))
 
 
 @app.function
-def load_task_template(task_id: str) -> dict:
-    """Fetch a task's answer-key-free output.json template from the live Karman benchmark server."""
-    import requests  # local import: in-repo the module-level requests import lives only in the fallback branch
-
-    resp = requests.get(
-        f"{TASKS_URL}/{task_id}/output.json",
-        headers={"Accept": "application/json", "User-Agent": "dmx/0.1 (+https://github.com/broadinstitute/dmx)"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+def conc_label(dose_uM: float) -> str:
+    """Human concentration string, e.g. 0.05 -> '50 nM', 5.0 -> '5 uM'."""
+    return f"{dose_uM * 1000:g} nM" if dose_uM < 1 else f"{dose_uM:g} uM"
 
 
 @app.function
-def fill_submission(template: dict, pred_via: dict) -> dict:
-    """Populate a task's output.json: rank + viability_pct from predicted viability.
+def prism_dose_grid() -> pl.DataFrame:
+    """Full PRISM dose-response: every screened concentration x compound x line, plus the matched read.
 
-    `pred_via` is keyed (condition, cell_line, timepoint_h) -> % viability. Ranks are computed
-    among the template's own entries (1 = lowest viability = strongest), so per-line tasks rank
-    within 12 and the pooled 1.5 ranks across all 48.
+    Returns long rows (drug, target, cell_line, dose_uM, viability_pct, is_matched) where is_matched
+    flags the screened point nearest each drug's nightshift dose - the single value the prediction reads.
     """
-    out = copy.deepcopy(template)
-    task_line, task_tp = template.get("cell_line"), template.get("timepoint_h")
-    entries = out["rankings"]
-    values = [pred_via[(e["condition"], e.get("cell_line", task_line), e.get("timepoint_h", task_tp))] for e in entries]
-    order = sorted(range(len(entries)), key=lambda i: values[i])
-    for position, i in enumerate(order, start=1):
-        entries[i]["rank"] = position
-        entries[i]["viability_pct"] = round(values[i], 1)
-    return out
-
-
-@app.function
-def prism_dose_signal() -> pl.DataFrame:
-    """PRISM dose-resolved log2 fold-change at the dose nearest each panel drug's task dose, both lines.
-
-    Importable so the evaluation notebook reuses the exact same engine - no re-implementation, no
-    dependence on the (gitignored) written submission files.
-    """
-    viab_features = dataset_features(PRISM_VIAB)
+    features = dataset_features(PRISM_VIAB)
+    labels = features["label"].to_list() if features.height else []
     rows = []
     for c in PANEL:
-        pick = nearest_dose_label(viab_features, c["prism"], c["dose_uM"])
-        label, picked_uM = pick if pick else (None, None)
-        vals = two_line_values(PRISM_VIAB, label) if label else {k: None for k in CELL_LINES}
-        for line, log2fc in vals.items():
-            rows.append(
-                {
-                    "drug": c["drug"],
-                    "cell_line": line,
-                    "dose_uM": c["dose_uM"],
-                    "prism_dose_uM": picked_uM,
-                    "prism_log2fc": log2fc,
-                    "prism_viab_pct": round(100.0 * 2.0**log2fc, 1) if log2fc is not None else None,
-                }
-            )
+        pattern = re.compile(rf"^{re.escape(c['prism'])} ([\d.]+) uM$")
+        doses = sorted(float(m.group(1)) for label in labels if (m := pattern.match(label)))
+        if not doses:
+            continue
+        matched = nearest_dose(doses, c["dose_uM"])
+        for dose in doses:
+            label = next(la for la in labels if pattern.match(la) and float(pattern.match(la).group(1)) == dose)
+            for line, log2fc in two_line_values(PRISM_VIAB, label).items():
+                if log2fc is None:
+                    continue
+                rows.append(
+                    {
+                        "drug": c["drug"],
+                        "target": c["target"],
+                        "cell_line": line,
+                        "dose_uM": dose,
+                        "viability_pct": round(100.0 * 2.0**log2fc, 1),
+                        "log2fc": log2fc,
+                        "is_matched": dose == matched,
+                    }
+                )
     return pl.DataFrame(rows)
 
 
 @app.function
-def panel_predictions(signal: pl.DataFrame | None = None) -> pl.DataFrame:
-    """Predicted % viability per (condition, cell_line, timepoint) from the PRISM signal + kinetic factor."""
-    if signal is None:
-        signal = prism_dose_signal()
+def panel_predictions(grid: pl.DataFrame | None = None) -> pl.DataFrame:
+    """Predicted % viability per (condition, cell_line, timepoint) from the matched PRISM read + kinetics."""
+    if grid is None:
+        grid = prism_dose_grid()
+    matched = grid.filter(pl.col("is_matched"))
     rows = []
-    for row in signal.iter_rows(named=True):
-        if row["prism_log2fc"] is None:
-            continue
+    for row in matched.iter_rows(named=True):
         for tp in (24, 48):
             rows.append(
                 {
                     "condition": row["drug"],
                     "cell_line": row["cell_line"],
                     "timepoint_h": tp,
-                    "pred_viability_pct": round(predicted_viability_pct(row["prism_log2fc"], tp), 1),
+                    "pred_viability_pct": round(predicted_viability_pct(row["log2fc"], tp), 1),
                 }
             )
     return pl.DataFrame(rows)
 
 
-@app.cell
-def _():
-    # Engine: PRISM viability at the dose nearest each drug's task dose, for both lines.
-    prism_signal = prism_dose_signal()
-    mo.vstack(
-        [
-            mo.md(
-                "## The PRISM signal\n\n"
-                "Dose-resolved PRISM log2 fold-change at the curve point nearest each task dose "
-                "(`prism_dose_uM`), and the implied fractional viability. All 12/12 compounds resolve for "
-                "both lines. This single number per (drug, line) is the only measured input to the prediction."
-            ),
-            mo.ui.table(prism_signal.sort(["cell_line", "prism_log2fc"]), page_size=12),
-        ]
-    )
-    return (prism_signal,)
+@app.function
+def auc_percentiles() -> pl.DataFrame:
+    """For each compound, where A375 / LOXIMVI sensitivity (PRISM AUC) falls among all screened lines."""
+    rows = []
+    for c in PANEL:
+        frame = matrix_feature(PRISM_AUC, c["prism"], value_name="auc")
+        by_id = dict(zip(frame["depmap_id"], frame["auc"], strict=False)) if frame.height else {}
+        values = sorted(v for v in by_id.values() if v is not None)
+        if not values:
+            continue
+        for line, model_id in CELL_LINES.items():
+            x = by_id.get(model_id)
+            if x is None:
+                continue
+            pctile = round(100.0 * sum(1 for a in values if a < x) / len(values), 1)
+            rows.append(
+                {
+                    "drug": c["drug"],
+                    "target": c["target"],
+                    "cell_line": line,
+                    "auc": round(x, 3),
+                    "pctile": pctile,
+                    "n_lines": len(values),
+                }
+            )
+    return pl.DataFrame(rows)
 
 
-@app.cell
-def _(prism_signal):
-    # Predicted % viability for every (drug, line, timepoint) - reuse the already-pulled signal.
-    predictions = panel_predictions(prism_signal)
-    pred_via = {
-        (r["condition"], r["cell_line"], r["timepoint_h"]): r["pred_viability_pct"]
-        for r in predictions.iter_rows(named=True)
-    }
-    mo.vstack(
-        [
-            mo.md(
-                "## Predicted viability (the submission's raw prediction)\n\n"
-                "One predicted % viability per condition x cell line x timepoint. The kinetic factor makes "
-                "24h less killed than 48h; it cannot reorder drugs within a (line, timepoint) - that order "
-                "is fixed by the PRISM dose signal."
-            ),
-            mo.ui.table(predictions.sort(["cell_line", "timepoint_h", "pred_viability_pct"]), page_size=12),
-        ]
-    )
-    return pred_via, predictions
+@app.function
+def load_task_template(task_id: str) -> dict:
+    """Fetch a task's answer-key-free output.json template from the live Karman benchmark server."""
+    return bb_get_json(f"{TASKS_URL}/{task_id}/output.json")
+
+
+@app.function
+def bb_get_json(url: str) -> dict:
+    """Plain GET of a JSON document (used for the Karman task templates, not Breadbox)."""
+    import requests  # local import: in-repo, requests lives only in the inline fallback branch
+
+    resp = requests.get(url, headers={"Accept": "application/json", "User-Agent": "dmx/0.1"}, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+
+@app.function
+def fill_submission(template: dict, pred_via: dict) -> dict:
+    """Populate a task's output.json: rank + viability_pct from predicted viability (rank 1 = strongest)."""
+    out = copy.deepcopy(template)
+    task_line, task_tp = template.get("cell_line"), template.get("timepoint_h")
+    entries = out["rankings"]
+    values = [pred_via[(e["condition"], e.get("cell_line", task_line), e.get("timepoint_h", task_tp))] for e in entries]
+    for position, i in enumerate(sorted(range(len(entries)), key=lambda i: values[i]), start=1):
+        entries[i]["rank"] = position
+        entries[i]["viability_pct"] = round(values[i], 1)
+    return out
 
 
 @app.function
 def build_reasoning(filled: dict) -> str:
-    """Generate the reasoning_md trace for a filled task - method, grounding, ranking, caveats.
-
-    This is the `reasoning_md` the Karman `submit_response` tool wants and the task prompts ask
-    for; it is generated from the same prediction the output.json carries, so the two never drift.
-    """
+    """Generate the reasoning_md trace for a filled task - method, grounding, ranking, caveats."""
     entries = sorted(filled["rankings"], key=lambda e: e["rank"])
     pooled = "cell_line" in entries[0]
-    header_cols = (
-        "| rank | condition | cell line | timepoint | predicted viability % |"
-        if pooled
-        else "| rank | condition | conc | predicted viability % |"
-    )
-    sep = "|---|---|---|---|---|" if pooled else "|---|---|---|---|"
-    rows = []
-    for e in entries:
-        if pooled:
-            rows.append(
-                f"| {e['rank']} | {e['condition']} | {e['cell_line']} | {e['timepoint_h']}h | {e['viability_pct']} |"
-            )
-        else:
-            rows.append(f"| {e['rank']} | {e['condition']} | {e['concentration']} | {e['viability_pct']} |")
-    table = "\n".join([header_cols, sep, *rows])
+    if pooled:
+        head = "| rank | condition | cell line | timepoint | predicted viability % |\n|---|---|---|---|---|"
+        body = "\n".join(
+            f"| {e['rank']} | {e['condition']} | {e['cell_line']} | {e['timepoint_h']}h | {e['viability_pct']} |"
+            for e in entries
+        )
+    else:
+        head = "| rank | condition | conc | predicted viability % |\n|---|---|---|---|"
+        body = "\n".join(
+            f"| {e['rank']} | {e['condition']} | {e['concentration']} | {e['viability_pct']} |" for e in entries
+        )
     return f"""# Reasoning - Night Shift task {filled["task"]}
 
 {filled["description"]}
 
 ## Method (public-data lookup)
 
-This ranking is grounded entirely in **DepMap PRISM Repurposing Secondary**, a measured
-small-molecule viability screen, for the exact cell lines in this task (A375 = ACH-000219,
-LOXIMVI = ACH-000750). For each compound I read PRISM's log2 fold-change vs DMSO at the
-screened concentration nearest its stated dose, convert to fractional viability (`2**log2fc`),
-and apply a fixed 24h/48h kinetic factor (PRISM is a ~5-day endpoint; 24h is attenuated toward
-baseline). Conditions are ranked by predicted viability, rank 1 = strongest effect (lowest
-viability). All 12 compounds resolve in PRISM for both lines (Sapanisertib via its code MLN0128).
+This ranking is grounded entirely in **DepMap PRISM Repurposing Secondary**, a measured small-molecule
+viability screen, for the exact cell lines in this task (A375 = ACH-000219, LOXIMVI = ACH-000750). For
+each compound I read PRISM's log2 fold-change vs DMSO at the screened concentration nearest its stated
+dose, convert to fractional viability (`2**log2fc`), and apply a fixed 24h/48h kinetic factor (PRISM is
+a ~5-day endpoint; 24h is attenuated toward baseline). Conditions are ranked by predicted viability,
+rank 1 = strongest effect (lowest viability). All 12 compounds resolve in PRISM for both lines
+(Sapanisertib via its code MLN0128).
 
 ## Predicted ranking
 
-{table}
+{head}
+{body}
 
-## Caveats (stated honestly)
+## Caveats
 
 - The ranking is driven by measured PRISM sensitivity; the absolute viability % is approximate
   (different assay, timepoint, and a coarse 4x dose grid).
-- PRISM has a single timepoint, so this method cannot reorder drugs between 24h and 48h - the
-  within-line ordering is identical at both, which understates fast-vs-slow kinetic differences.
-- HDAC inhibitor potency (Panobinostat) is under-represented by its dose-matched PRISM point
-  relative to its true effect, so its rank is the least certain.
+- PRISM has a single timepoint, so this method cannot reorder drugs between 24h and 48h.
+- HDAC-inhibitor potency is under-represented by one dose-matched point (polypharmacology).
 """
 
 
 @app.cell
-def _(pred_via):
-    # Build + write the five populated output.json submissions (+ reasoning) from the templates.
-    SUB_DIR.mkdir(parents=True, exist_ok=True)
-    filled = {}
-    for _task_id, _line, _tp in SINGLE_TASKS:
-        _template = load_task_template(_task_id)
-        _out = fill_submission(_template, pred_via)
-        filled[_task_id] = _out
-        _dest = SUB_DIR / f"task_{_task_id}"
-        _dest.mkdir(parents=True, exist_ok=True)
-        (_dest / "output.json").write_text(json.dumps(_out, indent=2))
-        (_dest / "reasoning.md").write_text(build_reasoning(_out))
-    # Show task 1.3 (A375 48h) as a worked example, ordered by predicted rank.
-    example = (
-        pl.DataFrame(filled["1.3"]["rankings"])
-        .select("rank", "condition", "concentration", "viability_pct")
-        .sort("rank")
-    )
-    mo.vstack(
+def _():
+    # Section 1 - confirm the system from public data: lineage, disease, BRAF status.
+    _meta = model_metadata(["CellLineName", "OncotreeLineage", "OncotreePrimaryDisease"])
+    _braf = two_line_values(HOTSPOT, "BRAF")
+    card = pl.DataFrame(
         [
-            mo.md(
-                f"## Built {len(filled)} submissions -> `{SUB_DIR.relative_to(NOTEBOOK_DIR.parent)}/task_*/`\n\n"
-                "Each task dir holds `output.json` (the filled template) and `reasoning.md` (the trace the "
-                "Karman `submit_response` tool wants). Example: task 1.3 (A375, 48h), rank 1 = strongest effect:"
-            ),
-            mo.ui.table(example, page_size=12),
+            {
+                "cell_line": _name,
+                "DepMap id": _mid,
+                "name": _meta["CellLineName"].get(_mid),
+                "lineage": _meta["OncotreeLineage"].get(_mid),
+                "disease": _meta["OncotreePrimaryDisease"].get(_mid),
+                "BRAF": "hotspot-mutated" if (_braf.get(_name) or 0) > 0 else "wild-type",
+            }
+            for _name, _mid in CELL_LINES.items()
         ]
     )
-    return (filled,)
-
-
-@app.cell
-def _(filled):
-    # Render each task's reasoning trace INLINE, so the rationale reads directly in the notebook /
-    # molab. This is the same text written to each task's reasoning.md and submitted with it.
-    _traces = {f"Task {_tid}": mo.md(build_reasoning(_out)) for _tid, _out in filled.items()}
     mo.vstack(
         [
             mo.md(
-                "## Reasoning traces (inline)\n\n"
-                "The rationale submitted with each task, rendered here so it reads without opening the "
-                "`reasoning.md` files. Expand a task for its method, predicted ranking, and caveats."
+                "## 1. The system, confirmed from DepMap\n\n"
+                "Both lines resolve in DepMap as **skin / melanoma** carrying a **BRAF hotspot mutation** - "
+                "the BRAF-V600E melanoma setting the benchmark describes, verified rather than assumed."
             ),
-            mo.accordion(_traces),
+            mo.ui.table(card, page_size=2),
         ]
     )
     return
 
 
 @app.cell
-def _(predictions):
-    # The submission's own prediction - no ground truth: predicted viability per drug, by line/timepoint.
-    chart = (
-        alt.Chart(predictions)
-        .mark_circle(size=90, opacity=0.85)
+def _():
+    # Section 2 - the evidence: the full PRISM dose-response the prediction reads (the showpiece).
+    dose_grid = prism_dose_grid()
+    _curve = (
+        alt.Chart(dose_grid)
+        .mark_line(point=alt.OverlayMarkDef(size=22), strokeWidth=1.6)
         .encode(
-            x=alt.X("pred_viability_pct:Q", title="predicted % viability (PRISM-grounded; lower = stronger)"),
+            x=alt.X("dose_uM:Q", scale=alt.Scale(type="log"), title="dose (uM, log)"),
+            y=alt.Y("viability_pct:Q", title="viability %", scale=alt.Scale(domain=[0, 120])),
+            color=alt.Color("cell_line:N", title="line"),
+            tooltip=["drug", "cell_line", "dose_uM", "viability_pct"],
+        )
+    )
+    _matched = (
+        alt.Chart(dose_grid)
+        .transform_filter(alt.datum.is_matched)
+        .mark_point(size=130, filled=True, opacity=0.9, shape="diamond")
+        .encode(
+            x=alt.X("dose_uM:Q", scale=alt.Scale(type="log")),
+            y="viability_pct:Q",
+            color=alt.Color("cell_line:N"),
+            tooltip=["drug", "cell_line", "dose_uM", "viability_pct"],
+        )
+    )
+    grid_chart = (
+        alt.layer(_curve, _matched).properties(width=190, height=140).facet(facet="drug:N", columns=4, title=None)
+    )
+    mo.vstack(
+        [
+            mo.md(
+                "## 2. The evidence: PRISM dose-response curves\n\n"
+                "Each panel is one compound's measured 8-point viability curve in A375 and LOXIMVI (PRISM "
+                "Repurposing Secondary). The **diamond** marks the screened concentration nearest the nightshift "
+                "dose - the single value the prediction reads. Steep early-dropping curves (the MEK/HDAC/mTOR "
+                "drugs) are the strong killers; flat curves (Alpelisib, Capivasertib) barely move."
+            ),
+            mo.ui.altair_chart(grid_chart),
+        ]
+    )
+    return (dose_grid,)
+
+
+@app.cell
+def _():
+    # An interactive focus: pick one compound and see its curve large, with the nightshift dose called out.
+    drug_picker = mo.ui.dropdown(options=DRUGS, value="Panobinostat", label="Compound")
+    drug_picker
+    return (drug_picker,)
+
+
+@app.cell
+def _(dose_grid, drug_picker):
+    _sel = drug_picker.value
+    _one = dose_grid.filter(pl.col("drug") == _sel)
+    _ns = next(c["dose_uM"] for c in PANEL if c["drug"] == _sel)
+    _line = (
+        alt.Chart(_one)
+        .mark_line(point=True, strokeWidth=2)
+        .encode(
+            x=alt.X("dose_uM:Q", scale=alt.Scale(type="log"), title="dose (uM, log)"),
+            y=alt.Y("viability_pct:Q", title="viability %", scale=alt.Scale(domain=[0, 120])),
+            color=alt.Color("cell_line:N", title="line"),
+            tooltip=["cell_line", "dose_uM", "viability_pct"],
+        )
+    )
+    _rule = alt.Chart(pl.DataFrame({"d": [_ns]})).mark_rule(strokeDash=[5, 4], color="#888").encode(x="d:Q")
+    chart_one = alt.layer(_line, _rule).properties(width=480, height=300)
+    mo.vstack(
+        [
+            mo.md(f"### {_sel} - dose-response (dashed line = nightshift dose, {conc_label(_ns)})"),
+            mo.ui.altair_chart(chart_one),
+        ]
+    )
+    return
+
+
+@app.cell
+def _():
+    # Section 3 - sensitivity in context: where these two lines fall among all screened lines.
+    context = auc_percentiles()
+    _ctx_chart = (
+        alt.Chart(context)
+        .mark_circle(size=140, opacity=0.85)
+        .encode(
+            x=alt.X(
+                "pctile:Q",
+                title="sensitivity percentile vs all DepMap lines (lower = more sensitive)",
+                scale=alt.Scale(domain=[0, 100]),
+            ),
+            y=alt.Y("drug:N", sort=alt.EncodingSortField(field="pctile", op="min"), title=None),
+            color=alt.Color("cell_line:N", title="line"),
+            tooltip=["drug", "cell_line", "pctile", "auc", "n_lines"],
+        )
+        .properties(width=520, height=320)
+    )
+    _median = context["pctile"].median()
+    mo.vstack(
+        [
+            mo.md(
+                "## 3. Are these lines special? Sensitivity in context\n\n"
+                f"For each compound, the percentile of A375 / LOXIMVI sensitivity (PRISM AUC) among all "
+                f"~{int(context['n_lines'][0])} screened cell lines - **lower = more sensitive than most**. The "
+                "BRAF/MEK/mTOR drugs land in the low single-to-double-digit percentiles: these melanoma lines are "
+                "among the most sensitive in the whole panel, which is exactly the prior the prediction leans on. "
+                f"(Median percentile across the panel: {_median:.0f}.)"
+            ),
+            mo.ui.altair_chart(_ctx_chart),
+        ]
+    )
+    return
+
+
+@app.cell
+def _(dose_grid):
+    # Section 4 - from the matched read to a ranked prediction.
+    predictions = panel_predictions(dose_grid)
+    pred_via = {
+        (r["condition"], r["cell_line"], r["timepoint_h"]): r["pred_viability_pct"]
+        for r in predictions.iter_rows(named=True)
+    }
+    _pchart = (
+        alt.Chart(predictions)
+        .mark_circle(size=80, opacity=0.85)
+        .encode(
+            x=alt.X("pred_viability_pct:Q", title="predicted % viability (lower = stronger)"),
             y=alt.Y("condition:N", sort="x", title=None),
             color=alt.Color("timepoint_h:N", title="timepoint (h)"),
             tooltip=["condition", "cell_line", "timepoint_h", "pred_viability_pct"],
@@ -430,11 +527,57 @@ def _(predictions):
     mo.vstack(
         [
             mo.md(
-                "## Predicted viability across the panel\n\n"
-                "The submission's prediction only (no ground truth). Lower = stronger predicted effect; "
-                "24h sits higher than 48h by the kinetic factor. Drugs sharing a PRISM signal cluster together."
+                "## 4. The prediction\n\n"
+                "Read PRISM at the matched dose (the diamond above), convert to % viability, apply the 24h/48h "
+                "kinetic factor. Lower = stronger predicted effect; 24h sits above 48h by the kinetic factor."
             ),
-            mo.ui.altair_chart(chart),
+            mo.ui.altair_chart(_pchart),
+        ]
+    )
+    return (pred_via,)
+
+
+@app.cell
+def _(pred_via):
+    # Build + write the five populated output.json submissions (+ reasoning) from the live templates.
+    SUB_DIR.mkdir(parents=True, exist_ok=True)
+    filled = {}
+    for _task_id, _line, _tp in SINGLE_TASKS:
+        _out = fill_submission(load_task_template(_task_id), pred_via)
+        filled[_task_id] = _out
+        _dest = SUB_DIR / f"task_{_task_id}"
+        _dest.mkdir(parents=True, exist_ok=True)
+        (_dest / "output.json").write_text(json.dumps(_out, indent=2))
+        (_dest / "reasoning.md").write_text(build_reasoning(_out))
+    example = (
+        pl.DataFrame(filled["1.3"]["rankings"])
+        .select("rank", "condition", "concentration", "viability_pct")
+        .sort("rank")
+    )
+    mo.vstack(
+        [
+            mo.md(
+                f"### The five submissions -> `{SUB_DIR.relative_to(NOTEBOOK_DIR.parent)}/task_*/`\n\n"
+                "Each task dir holds the filled `output.json` and a `reasoning.md` trace. Example: task 1.3 "
+                "(A375, 48h), rank 1 = strongest effect."
+            ),
+            mo.ui.table(example, page_size=12),
+        ]
+    )
+    return (filled,)
+
+
+@app.cell
+def _(filled):
+    # Section 5 - the reasoning trace submitted with each task, rendered inline.
+    _traces = {f"Task {_tid}": mo.md(build_reasoning(_out)) for _tid, _out in filled.items()}
+    mo.vstack(
+        [
+            mo.md(
+                "## 5. Reasoning traces (inline)\n\n"
+                "The rationale submitted with each task - expand one for its method, ranking, and caveats."
+            ),
+            mo.accordion(_traces),
         ]
     )
     return
@@ -445,44 +588,35 @@ def _(filled):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     summary = {
         "description": (
-            "A DepMap (PRISM Repurposing Secondary) grounded submission to nightshift single-agent "
-            "tasks 1.1-1.5. Predicts per-condition % viability and rank from dose-matched PRISM "
-            "fold-change plus a 24h/48h kinetic factor. Public data only."
+            "A DepMap (PRISM Repurposing Secondary) grounded report + submission to nightshift single-agent "
+            "tasks 1.1-1.5. Confirms the cell lines, shows the measured dose-response curves and sensitivity "
+            "context, then predicts per-condition % viability and rank. Public data only."
         ),
-        "numbers": {
-            "tasks": [t[0] for t in SINGLE_TASKS],
-            "compounds": len(PANEL),
-            "conditions_task_1_5": len(filled["1.5"]["rankings"]),
-        },
+        "numbers": {"tasks": [t[0] for t in SINGLE_TASKS], "compounds": len(PANEL)},
         "files": [f"submission/task_{t[0]}/{f}" for t in filled for f in ("output.json", "reasoning.md")],
     }
     (OUT_DIR / "summary.json").write_text(json.dumps(summary, indent=2))
-    mo.md(f"```json\n{json.dumps(summary, indent=2)}\n```")
     return
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    ## What this submission can and cannot do
+    ## What this report shows, and its limits
 
-    - **The ranking is the load-bearing prediction**, grounded entirely in PRISM measured drug
-      response in these two lines - the strongest public signal available. The grader uses `rank`
-      when present, so the predicted % viability is a readable secondary.
-    - **It cannot reorder drugs between 24h and 48h.** PRISM has one timepoint; the kinetic factor is
-      a uniform scaling, so the within-line ordering is identical at both timepoints. Drug-specific
-      kinetics (some compounds act faster than others) is a known blind spot of this method.
-    - **Absolute viability is approximate.** PRISM is a ~5-day pooled screen on a coarse 4x dose grid,
-      not a 48h single-dose CellTiter-Glo, so the predicted level can be off even where the ranking holds.
-    - **HDAC potency is under-represented.** Panobinostat's dose-matched PRISM point understates its
-      true effect (pan-HDAC polypharmacology), so its rank is the least certain - flagged in every trace.
+    - **The prediction is evidence-backed, not a guess.** Sections 1-3 are all measured public data: the
+      lines are BRAF-mutant melanoma, the dose-response curves are real PRISM measurements, and these lines
+      are among the most drug-sensitive in DepMap. The ranking in section 4 is a direct read of those curves.
+    - **It cannot reorder 24h vs 48h.** PRISM has one timepoint, so the kinetic factor is a uniform scaling;
+      drug-specific kinetics (some compounds act faster) is a known blind spot.
+    - **Absolute viability is approximate** - PRISM is a ~5-day pooled screen on a coarse 4x dose grid, not a
+      48h single-dose CellTiter-Glo - and HDAC-inhibitor potency is under-represented by one matched point.
 
     ## To extend
 
-    - Swap the rank signal to dose-collapsed PRISM **AUC** (integrates the whole curve) and submit that variant.
-    - Encode a per-drug kinetic prior (BRAF/MEK inhibitors act slower than mTOR/HDAC) so the 24h and
-      48h rankings can differ - the one thing this submission structurally cannot predict.
-    - Ensemble PRISM with GDSC2 and CTD^2 (also in Breadbox for these lines) and submit the consensus.
+    - Layer GDSC2 and CTD^2 dose-response (also in Breadbox for these lines) and submit a cross-screen consensus.
+    - Add the CRISPR dependency of each drug's target gene (A375 is in the Chronos panel) as a mechanistic prior.
+    - Encode a per-drug kinetic prior so the 24h and 48h rankings can differ - the one thing this cannot predict.
     """)
     return
 
