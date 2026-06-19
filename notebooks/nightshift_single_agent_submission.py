@@ -29,8 +29,57 @@ with app.setup:
     if str(NOTEBOOK_DIR) not in sys.path:
         sys.path.insert(0, str(NOTEBOOK_DIR))
 
-    from nb02_dataset_discovery import dataset_features  # noqa: E402
-    from nb03_gene_dependency_profile import matrix_feature  # noqa: E402
+    # In the dmx repo this notebook reuses the catalog's Breadbox helpers from nb02/nb03. Shared as a
+    # STANDALONE notebook (e.g. on molab) those siblings are absent, so fall back to inline definitions
+    # of the same two helpers - a deliberate duplication that keeps the notebook self-contained.
+    try:
+        from nb02_dataset_discovery import dataset_features  # noqa: E402
+        from nb03_gene_dependency_profile import matrix_feature  # noqa: E402
+    except ImportError:
+        import time  # noqa: E402
+
+        import requests  # noqa: E402
+
+        _BB_BASE = "https://depmap.org/portal/breadbox"
+        _BB_HEADERS = {"Accept": "application/json", "User-Agent": "dmx/0.1 (+https://github.com/broadinstitute/dmx)"}
+
+        def _bb(method, endpoint, *, body=None):
+            # Identifying User-Agent (the portal 403s the default) + retry on transient 5xx / connection errors.
+            for attempt in range(6):
+                try:
+                    resp = requests.request(
+                        method,
+                        f"{_BB_BASE}/{endpoint.lstrip('/')}",
+                        json=body,
+                        headers=_BB_HEADERS,
+                        timeout=120 if method == "POST" else 60,
+                    )
+                    if resp.status_code < 500:
+                        resp.raise_for_status()
+                        return resp.json()
+                except requests.RequestException:
+                    pass
+                time.sleep(3.0 * (attempt + 1))
+            raise RuntimeError(f"Breadbox {method} {endpoint} failed after retries")
+
+        def dataset_features(dataset_id):
+            """Inline fallback for nb02: list the features (compound/gene labels) in a matrix dataset."""
+            records = _bb("GET", f"datasets/features/{dataset_id}")
+            return pl.DataFrame(records, infer_schema_length=10_000) if records else pl.DataFrame()
+
+        def matrix_feature(dataset_id, feature_label, value_name="value"):
+            """Inline fallback for nb03: fetch one feature column across models from a matrix dataset."""
+            raw = _bb(
+                "POST",
+                f"datasets/matrix/{dataset_id}",
+                body={"features": [feature_label], "feature_identifier": "label"},
+            )
+            values = raw.get(feature_label)
+            if values is None and isinstance(raw, dict) and raw:
+                values = next(iter(raw.values()))
+            if not isinstance(values, dict):
+                return pl.DataFrame()
+            return pl.DataFrame({"depmap_id": list(values.keys()), value_name: list(values.values())})
 
     # The nightshift benchmark task prompts live next to this catalog. We read ONLY the answer-key-free
     # templates here - never the oracle. Scoring is the grader's job (see nightshift_single_agent_eval).
