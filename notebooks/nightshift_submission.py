@@ -80,7 +80,7 @@ with app.setup:
     # notebook is fully self-contained - no local files, no sibling checkout.
     TASKS_URL = "https://mcp.karmanai.org/tasks"
 
-    OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_single_agent_submission"
+    OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_submission"
     SUB_DIR = OUT_DIR / "submission"
 
     # The two melanoma lines and their DepMap model ids.
@@ -1107,9 +1107,11 @@ def _():
                 "GPX4 / ferroptosis (sections 8-9) is the *known* vulnerability of this state - but it is the crowded "
                 "consensus and clinically stuck: no tolerable GPX4 drug exists and there are zero melanoma trials. So I "
                 "asked DepMap a different question - **what else does the dedifferentiated, resistant state depend on that "
-                "is druggable right now?** Each gene is scored by how selectively its CRISPR essentiality marks the "
-                "MEK-resistant + MITF-low + AXL-high state. The differentiated-identity genes (MITF, SOX10, TFAP2A) land "
-                "at the opposite, negative pole - the control that says the axis is real. The top *druggable* hit is "
+                "is druggable right now?** This is deliberately a **hypothesis-driven panel** - druggable nodes of the "
+                "mesenchymal / adhesion / dedifferentiation program - not a genome-wide fishing trip; the candidate list "
+                "*is* the theory being tested. Each gene is scored by how selectively its CRISPR essentiality marks the "
+                "MEK-resistant + MITF-low + AXL-high state, and the differentiated-identity genes (MITF, SOX10, TFAP2A) "
+                "land at the opposite, negative pole - the control that says the axis is real. The top hit is "
                 "**FAK (PTK2)**, in red."
             ),
             mo.ui.altair_chart(_bar),
@@ -1136,10 +1138,11 @@ def _(gpx4_n, gpx4_rho):
         "story stops at the well-known ferroptosis/GPX4 vulnerability of that state - which this report reproduces in "
         f"DepMap ({gpx4_n} melanoma lines, GPX4-dependence rises with MEK-resistance, rho = {gpx4_rho}) - but ferroptosis "
         "is clinically stuck: there is no tolerable GPX4 drug and zero melanoma trials. So I asked DepMap what ELSE this "
-        "state depends on that is druggable now, and the top hit is FOCAL ADHESION KINASE (FAK / PTK2). The dedifferentiated "
-        "persister, no longer living by the MAPK growth signal, survives on adhesion / mechanotransduction signaling: "
-        "FAK-SRC feeding YAP/TAZ-TEAD and NF-kB. FAK is the druggable apex of that module - and unlike GPX4, FAK and SRC "
-        "inhibitors already exist and are tolerated in patients.\n\n"
+        "state depends on that is druggable now - and the top hit among a prespecified panel of actionable resistance-state "
+        "genes is FOCAL ADHESION KINASE (FAK / PTK2). The hypothesis: the dedifferentiated persister, no longer living by "
+        "the MAPK growth signal, leans on adhesion / mechanotransduction signaling - FAK-SRC feeding YAP/TAZ-TEAD and NF-kB. "
+        "FAK is a tractable, druggable HANDLE on that state (not, on this evidence, the proven master switch) - and unlike "
+        "GPX4, FAK and SRC inhibitors already exist and are tolerated in patients.\n\n"
         "THE EVIDENCE (DepMap, melanoma lines; weak individually, convergent together). FAK-dependence tracks the "
         "mesenchymal/resistant state by six independent markers - more FAK-essential when MITF-low (rho +0.38), AXL-high "
         "(-0.35), vimentin-high (-0.33), fibronectin-high (-0.27), ZEB1-high (-0.23), N-cadherin-high (-0.22). And FAK "
@@ -1170,10 +1173,19 @@ def _(gpx4_n, gpx4_rho):
         "(on-target); a differentiation-locked (MITF-forced) line should LOSE the FAK dependence. FALSIFICATION: if FAK "
         "inhibition does not preferentially kill the mesenchymal survivors, or the MRD-timed pulse does not beat the "
         "continuous doublet on outgrowth, the adhesion-addiction model is wrong.\n\n"
-        "HONEST LIMITS. The DepMap support is associational and modest (rho 0.2-0.4, n ~ 33-67 cell lines): it shows the "
-        "mesenchymal/resistant state ASSOCIATES with FAK-dependence, not that a FAK inhibitor cures resistance - which is "
-        "exactly what the experiment is for. But it is a non-obvious, druggable, falsifiable hypothesis, with convergent "
-        "in-silico support and an independent genetic line (AMBRA1-FAK), rather than the crowded consensus."
+        "HONEST LIMITS (this is a hypothesis to test, not a de-risked answer). (1) The DepMap support is cross-sectional "
+        "and modest - rho 0.2-0.4 across 33-67 cell lines - enough to NOMINATE a target, not to call FAK the apex of "
+        "resistance. (2) The hunt was a deliberately targeted, hypothesis-driven panel (druggable nodes of the "
+        "mesenchymal/adhesion program), not a genome-wide screen - that is the method, not a flaw - so the honest claim "
+        "is 'FAK is the strongest of the biologically-motivated handles tested'. (3) PTK2/FAK CRISPR essentiality may "
+        "reflect a state-marker or in-vitro "
+        "adhesion/culture dependency rather than the causal survival dependency of therapy-induced persisters in vivo - "
+        "CRISPR essentiality does not guarantee a FAK inhibitor selectively kills mesenchymal survivors in a patient. "
+        "(4) Clinically it is NOT de-risked: a defactinib + RAF/MEK (avutometinib) combination in metastatic uveal "
+        "melanoma was terminated for lack of meaningful tumor reduction (NCT04720417) - a different disease context, but a "
+        "real caution against optimism. Net: FAK is a non-obvious, druggable, falsifiable HANDLE on the resistant state, "
+        "with convergent in-silico support and an independent functional line (AMBRA1-FAK) - a better thing to test than "
+        "stopping at GPX4, but the proposed experiment is what would actually settle it."
     )
     analyses_text = (
         "Direct evidence from this report (public DepMap, computed live). (1) Resistance = a dedifferentiated state: GPX4 "

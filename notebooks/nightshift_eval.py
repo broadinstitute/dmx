@@ -27,7 +27,7 @@ with app.setup:
         sys.path.insert(0, str(NOTEBOOK_DIR))
 
     # Reuse the submission's exact PRISM engine - the prediction is computed identically, never re-derived.
-    from nightshift_single_agent_submission import panel_predictions  # noqa: E402
+    from nightshift_submission import panel_predictions  # noqa: E402
 
     # The wet-lab oracle is the held-out answer key. It lives in the nightshift repo, NOT this catalog,
     # and a contestant never sees it - which is why this scoring notebook is organizer-side only and is
@@ -37,7 +37,7 @@ with app.setup:
         24: NIGHTSHIFT / "data" / "processed" / "nb03_oracle" / "ranking_24h_single.csv",
         48: NIGHTSHIFT / "data" / "processed" / "nb03_oracle" / "ranking_48h_single.csv",
     }
-    OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_single_agent_eval"
+    OUT_DIR = NOTEBOOK_DIR.parent / "data" / "processed" / "nightshift_eval"
 
     # (task_id, cell_line, timepoint_h); 1.5 is pooled across both lines and both timepoints.
     SINGLE_TASKS = [
@@ -54,7 +54,7 @@ def _():
     mo.md(r"""
     # How lookup-able is each nightshift single-agent task? (organizer-side eval)
 
-    This scores the [PRISM-grounded submission](nightshift_single_agent_submission.py) against the
+    This scores the [PRISM-grounded submission](nightshift_submission.py) against the
     held-out wet-lab ground truth, to estimate how much of each ranking task is recoverable from
     public data alone - the "challenge" the benchmark poses.
 
