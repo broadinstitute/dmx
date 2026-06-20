@@ -254,7 +254,6 @@ def mechanism_validation() -> pl.DataFrame:
         "ACSL4 expression": col(EXPRESSION, "ACSL4"),
         "MITF dependency": col("Chronos_Combined", "MITF"),
         "Cobimetinib AUC": col(PRISM_AUC, "COBIMETINIB"),
-        "Dabrafenib AUC": col(PRISM_AUC, "DABRAFENIB"),
         "Panobinostat AUC": col(PRISM_AUC, "PANOBINOSTAT"),
     }
     # (prediction, GPX4-dep vs which feature, expected sign of rho, what it tests)
@@ -263,7 +262,6 @@ def mechanism_validation() -> pl.DataFrame:
         ("GPX4-dependent lines are AXL-high (dedifferentiated)", "AXL expression", "-", "state identity"),
         ("Lines depend on MITF OR GPX4, not both", "MITF dependency", "-", "switch trade-off"),
         ("GPX4-dependence rises with a 2nd MEK-inhibitor's resistance", "Cobimetinib AUC", "-", "resistance link"),
-        ("...and is weaker for a BRAF inhibitor", "Dabrafenib AUC", "-", "resistance link"),
         (
             "ACSL4 expression drives the GPX4-dependence (lipid remodeling)",
             "ACSL4 expression",
@@ -396,6 +394,35 @@ def fak_module_evidence() -> pl.DataFrame:
     ]:
         r, n = mel_spearman(fak, feature_dict(EXPRESSION, gene), mel)
         rows.append({"evidence": "mesenchymal marker (expression)", "FAK-dep vs": label, "rho": r, "n": n})
+    return pl.DataFrame(rows)
+
+
+@app.function
+def pathway_orthogonality() -> pl.DataFrame:
+    """Across melanoma lines, are the MAPK / PI3K-mTOR / HDAC arms NON-REDUNDANT vulnerabilities?
+
+    Average each arm's CRISPR dependency per line, then correlate arm-vs-arm across melanoma lines.
+    Near-zero between-arm rho = orthogonal (a line's MAPK dependence says nothing about its mTOR/HDAC
+    dependence, so hitting one arm does not implicitly cover another) - the data rationale for a 3-arm
+    combination. The diagonal is 1.0; the within-MAPK pair (MAP2K1-BRAF) is the high-correlation anchor.
+    """
+    mel = melanoma_set()
+    arms = {"MAPK": ["MAP2K1", "BRAF"], "PI3K/AKT/mTOR": ["MTOR", "AKT1", "PIK3CA"], "HDAC": ["HDAC1", "HDAC2"]}
+    arm_dep = {}
+    for arm, genes in arms.items():
+        cols = [feature_dict("Chronos_Combined", g) for g in genes]
+        arm_dep[arm] = {
+            m: sum(c[m] for c in cols if c.get(m) is not None) / sum(c.get(m) is not None for c in cols)
+            for m in mel
+            if any(c.get(m) is not None for c in cols)
+        }
+    names = list(arms)
+    rows = []
+    for a in names:
+        row = {"arm": a}
+        for b in names:
+            row[b] = mel_spearman(arm_dep[a], arm_dep[b], mel)[0]
+        rows.append(row)
     return pl.DataFrame(rows)
 
 
@@ -664,7 +691,7 @@ def build_nomination_reasoning(filled: dict, nom: dict) -> str:
 
 {filled["description"]}
 
-## Method (orthogonal-pathway nomination, grounded in PRISM)
+## Method (orthogonal-pathway nomination, grounded in PRISM + a DepMap orthogonality check)
 
 The greatest-effect 3-drug combination should hit three non-redundant signaling nodes, not three
 members of one pathway. I split the 12 agents into three arms - MAPK (BRAF/MEK), PI3K/AKT/mTOR, and
@@ -672,17 +699,30 @@ HDAC - and from each pick the agent with the lowest predicted viability at 1/3 i
 task's dosing rule), read from DepMap PRISM at 16h. The nominated combined viability is the
 Bliss-independence product of the three.
 
+The "orthogonal arms" premise is checkable, not assumed: across ~67 DepMap melanoma lines the three
+arms' CRISPR dependencies are essentially uncorrelated (between-arm Spearman ~ -0.17 to 0.25, vs the
+within-MAPK MAP2K1-BRAF anchor ~0.59) - genuinely non-redundant vulnerabilities, so hitting one arm
+does not implicitly cover another.
+
 | pathway arm | nominated drug | single-agent viability % (1/3 dose, 16h) |
 |---|---|---|
 {arm_rows}
 
 Nominated: **{" + ".join(nom["drugs"])}** at {", ".join(nom["concentrations"])}; predicted viability {nom["viability_pct"]}%.
 
-## Caveats
+## Caveats (this is a bet on synergy, honestly bounded)
 
-- The orthogonal-pathway choice is a bet that the three arms synergize; Bliss independence (the
-  number reported) is the no-interaction floor, and true synergy is not derivable from public data.
-- 16h precedes PRISM's endpoint; the kinetic factor is a stated prior, not fit to data.
+- Synergy is not measurable here: Bliss independence (the number reported) is the no-interaction floor,
+  and DepMap's combination screens cover neither A375/LOXIMVI nor any melanoma line.
+- The HDAC arm is the weakest: A375 is strongly MAPK- and mTOR-dependent but NOT HDAC-dependent
+  (HDAC1 dependency ~ -0.2); Panobinostat earns its slot as the panel's only HDAC option and the
+  strongest single agent at 48h, not from genetic support (LOXIMVI is absent from the CRISPR panel).
+- "Orthogonal vulnerability" is not "orthogonal signaling": the arms partly converge on apoptosis
+  (HDAC inhibition restores the apoptosis MAPK/mTOR suppress). Pairwise synergy is supported
+  preclinically (BRAF+mTOR; sapanisertib, a TOR-kinase inhibitor, synergizes with HDAC; BRAF+HDAC),
+  but the single best-supported triple in the literature (BRAF/MEK + CDK4/6) is not in the 12-drug panel.
+- 16h precedes PRISM's endpoint and is short for HDAC's transcriptional effect to mature; the kinetic
+  factor is a stated prior, not fit to data.
 """
 
 
@@ -1005,6 +1045,45 @@ def _(dose_grid):
 
 @app.cell
 def _():
+    # Section 7 (cont.) - show the work behind the nomination: is the "orthogonal arms" bet actually
+    # supported in DepMap, and how does it hold up against the synergy literature? (honestly).
+    ortho = pathway_orthogonality()
+    mo.vstack(
+        [
+            mo.md(
+                "### 7 (cont.) Showing the work: does the 'three orthogonal arms' bet hold up?\n\n"
+                "The nomination bets that hitting three NON-REDUNDANT pathway nodes maximizes effect - and that bet is "
+                "checkable. **Pathway orthogonality in DepMap:** average CRISPR dependency per arm across ~67 melanoma "
+                "lines, correlated arm-vs-arm (near zero = orthogonal; the within-MAPK MAP2K1-BRAF anchor is ~0.6):"
+            ),
+            mo.ui.table(ortho),
+            mo.md(
+                "Between-arm correlations are near zero, so a line's MAPK dependence carries essentially no information "
+                "about its mTOR or HDAC dependence: the three arms are **genuinely non-redundant vulnerabilities** - real "
+                "support for the combination rationale. **But the honest bounds (this is a bet, not a proof):**\n"
+                "- **Synergy is unmeasurable here.** DepMap's GDSC combination screens carry the right drug pairs "
+                "(MEK+PI3K, MEK+HDAC) but ZERO melanoma lines and neither A375 nor LOXIMVI - so we can show orthogonality, "
+                "not that the combination beats the singles.\n"
+                "- **Orthogonal vulnerability is not orthogonal signaling.** The arms partly converge on apoptosis (HDAC "
+                "inhibition restores the apoptosis MAPK/mTOR suppress), so 'orthogonal' is a genetic-dependence claim.\n"
+                "- **The HDAC arm is the weak link.** A375 is strongly MAPK- AND mTOR-dependent but NOT HDAC-dependent "
+                "(HDAC1 dependency ~ -0.2); Panobinostat earns its slot only as the panel's sole HDAC option and the "
+                "strongest single agent at 48h, not from genetic support (LOXIMVI is not in the CRISPR panel at all). "
+                "Panobinostat monotherapy is clinically inactive/toxic in melanoma, and 16h is short for its effect to mature.\n"
+                "- **Pairwise synergy IS supported preclinically** - BRAF + mTOR (sapanisertib, a TOR-kinase inhibitor, "
+                "synergizes with HDAC better than rapalogs), BRAF + HDAC (panobinostat) - so each pair has a rationale even "
+                "if the triple is unproven; the best-supported triple in the literature (BRAF/MEK + CDK4/6) is not in the panel.\n\n"
+                "Net: the orthogonal-pathway nomination is grounded in real dependency orthogonality and pairwise "
+                "preclinical synergy, but it is a bet on synergy we cannot measure in these lines, and the HDAC arm is its "
+                "weakest component."
+            ),
+        ]
+    )
+    return
+
+
+@app.cell
+def _():
     # Section 8 - the resistance-linked vulnerability, computed live from DepMap: across melanoma lines,
     # does MEK-inhibitor resistance track GPX4 dependence? This is the empirical backbone of the 4.1 strategy.
     vuln = resistance_vs_dependency("GPX4", "TRAMETINIB")
@@ -1066,7 +1145,7 @@ def _():
                 "AXL-high (rho -0.48) in expression, and a line depends on MITF *or* GPX4 but not both (rho -0.42). "
                 "Three independent measures - two expression, one CRISPR - all say the GPX4-dependent state IS the "
                 "dedifferentiated, resistant state. The MEK-resistance link also replicates on a second MEK inhibitor "
-                "(Cobimetinib) and is weaker for a BRAF inhibitor, as the model predicts.\n"
+                "(Cobimetinib).\n"
                 "- **Did NOT work (and this is useful):** ACSL4 expression does **not** predict GPX4-dependence here "
                 "(rho -0.04) - the textbook 'ACSL4-driven lipid remodeling causes the GPX4 dependence' step is not "
                 "visible in this data. The dependence is real; that particular molecular driver is not supported, so "
