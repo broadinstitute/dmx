@@ -14,6 +14,9 @@ notebooks/__marimo__/**
 !notebooks/__marimo__/
 !notebooks/__marimo__/session/
 !notebooks/__marimo__/session/*.json
+# ...except the eval snapshot: it reads the private oracle and (combos at n=4) its scores are
+# answer-revealing, so the eval is organizer-side / local only - never publish its snapshot.
+notebooks/__marimo__/session/nightshift_eval.py.json
 
 # Python and tool caches
 .venv/
