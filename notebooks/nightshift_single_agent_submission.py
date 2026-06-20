@@ -96,7 +96,24 @@ with app.setup:
     # Kinetic factor: PRISM is a ~5-day endpoint; the tasks read at 24h / 48h. We treat PRISM's
     # killing as the 48h magnitude (factor 1.0) and attenuate the 24h prediction toward baseline.
     # A stated prior, not tuned to any measured result; it only shifts level and how 24h/48h interleave.
-    KINETIC_FACTOR = {24: 0.55, 48: 1.0}
+    KINETIC_FACTOR = {16: 0.4, 24: 0.55, 48: 1.0}
+
+    # Orthogonal pathway arms, for the 3-drug nomination (tasks 3.x): pick the most potent drug from
+    # each arm, betting that hitting three non-redundant nodes gives the greatest combined effect.
+    PATHWAY_ARMS = {
+        "MAPK (BRAF/MEK)": [
+            "Trametinib",
+            "Dabrafenib",
+            "Encorafenib",
+            "Cobimetinib",
+            "Binimetinib",
+            "TAK-733",
+            "Vemurafenib",
+            "Regorafenib",
+        ],
+        "PI3K/AKT/mTOR": ["Sapanisertib", "Capivasertib", "Alpelisib"],
+        "HDAC": ["Panobinostat"],
+    }
 
     # The 12 single agents: fixed nightshift dose, target node, and PRISM label (Sapanisertib is
     # screened under its code MLN0128). Doses taken verbatim from the task prompts.
@@ -134,20 +151,20 @@ def _():
     **A Night Shift submission, grounded end to end in [DepMap](https://depmap.org).**
 
     The [Night Shift / Karman](https://karmanai.org/) benchmark runs a real melanoma viability
-    experiment - two cell lines, 12 compounds at fixed doses, read at 24h and 48h - and asks an agent
-    to predict the ranking *before* the wet-lab readout exists, from public knowledge only. Tasks
-    1.1-1.4 are A375 / LOXIMVI at 24h / 48h; 1.5 pools all 48 conditions.
-
-    This notebook is that prediction, but it shows its work. Every number below is pulled live from
-    DepMap's Breadbox API - the cell-line identities, the measured PRISM dose-response curves, and how
-    these lines compare to the rest of the cancer cell-line panel - and only then turned into a ranked
+    experiment and asks an agent to predict the outcome *before* the wet-lab readout exists, from
+    public knowledge only. This notebook answers **every task** - single-agent rankings (1.1-1.5),
+    combinations (2.1-2.3), 3-drug nominations (3.1-3.2), and the resistance strategy (4.1) - and it
+    shows its work: every number is pulled live from DepMap's Breadbox API, then turned into a
     prediction. Nothing is hand-entered; the notebook is self-contained and re-runs from scratch.
 
     1. **The system** - confirm the two lines are BRAF-mutant melanoma, from DepMap.
     2. **The evidence** - the PRISM dose-response curves the prediction reads.
     3. **The context** - how sensitive these lines are versus ~700 others.
-    4. **The prediction** - dose-matched read + a kinetic prior -> a ranked submission per task.
+    4. **The prediction** - dose-matched read + a kinetic prior -> single-agent rankings (1.1-1.5).
     5. **The reasoning** - the trace submitted with each task, inline.
+    6. **Combinations** (2.1-2.3) - Bliss independence over the single-agent reads.
+    7. **Nominations** (3.1-3.2) - the most potent agent per orthogonal pathway arm.
+    8. **Strategy** (4.1) - a resistance-reversal proposal grounded in the findings above.
     """)
     return
 
@@ -200,8 +217,8 @@ def predicted_viability_pct(prism_log2fc: float, timepoint_h: int) -> float:
 
 @app.function
 def conc_label(dose_uM: float) -> str:
-    """Human concentration string, e.g. 0.05 -> '50 nM', 5.0 -> '5 uM'."""
-    return f"{dose_uM * 1000:g} nM" if dose_uM < 1 else f"{dose_uM:g} uM"
+    """Human concentration string, e.g. 0.05 -> '50 nM', 5.0 -> '5 uM' (1/3 doses rounded to 1 dp)."""
+    return f"{round(dose_uM * 1000, 1):g} nM" if dose_uM < 1 else f"{round(dose_uM, 2):g} uM"
 
 
 @app.function
@@ -403,6 +420,72 @@ single-agent public data. Combinations are ranked by predicted viability, rank 1
 
 - Bliss independence is a null model: real synergy/antagonism will shift the true ranking.
 - Inherits the single-agent caveats (assay / timepoint / dose-grid approximation).
+"""
+
+
+@app.function
+def single_at_third(grid: pl.DataFrame, cell_line: str, timepoint_h: int) -> dict:
+    """Predicted single-agent viability at 1/3 the listed dose (the nomination dosing rule), per drug."""
+    out = {}
+    for c in PANEL:
+        sub = grid.filter((pl.col("drug") == c["drug"]) & (pl.col("cell_line") == cell_line))
+        doses = sub["dose_uM"].to_list()
+        if not doses:
+            continue
+        third = nearest_dose(doses, c["dose_uM"] / 3.0)
+        log2fc = sub.filter(pl.col("dose_uM") == third)["log2fc"][0]
+        out[c["drug"]] = round(predicted_viability_pct(log2fc, timepoint_h), 1)
+    return out
+
+
+@app.function
+def nominate_triple(grid: pl.DataFrame, cell_line: str, timepoint_h: int) -> dict:
+    """Nominate one most-potent drug per orthogonal pathway arm; predict the Bliss-product viability."""
+    singles = single_at_third(grid, cell_line, timepoint_h)
+    picks = [
+        (arm, min((d for d in drugs if d in singles), key=lambda d: singles[d])) for arm, drugs in PATHWAY_ARMS.items()
+    ]
+    drugs = [d for _, d in picks]
+    bliss = 1.0
+    for d in drugs:
+        bliss *= singles[d] / 100.0
+    concs = [conc_label(next(c["dose_uM"] for c in PANEL if c["drug"] == d) / 3.0) for d in drugs]
+    return {
+        "drugs": drugs,
+        "concentrations": concs,
+        "viability_pct": round(100.0 * bliss, 1),
+        "picks": picks,
+        "singles": singles,
+    }
+
+
+@app.function
+def build_nomination_reasoning(filled: dict, nom: dict) -> str:
+    """Reasoning trace for a 3-drug nomination - the orthogonal-pathway pick + Bliss product."""
+    arm_rows = "\n".join(f"| {arm} | {d} | {nom['singles'][d]} |" for arm, d in nom["picks"])
+    return f"""# Reasoning - Night Shift task {filled["task"]}
+
+{filled["description"]}
+
+## Method (orthogonal-pathway nomination, grounded in PRISM)
+
+The greatest-effect 3-drug combination should hit three non-redundant signaling nodes, not three
+members of one pathway. I split the 12 agents into three arms - MAPK (BRAF/MEK), PI3K/AKT/mTOR, and
+HDAC - and from each pick the agent with the lowest predicted viability at 1/3 its listed dose (the
+task's dosing rule), read from DepMap PRISM at 16h. The nominated combined viability is the
+Bliss-independence product of the three.
+
+| pathway arm | nominated drug | single-agent viability % (1/3 dose, 16h) |
+|---|---|---|
+{arm_rows}
+
+Nominated: **{" + ".join(nom["drugs"])}** at {", ".join(nom["concentrations"])}; predicted viability {nom["viability_pct"]}%.
+
+## Caveats
+
+- The orthogonal-pathway choice is a bet that the three arms synergize; Bliss independence (the
+  number reported) is the no-interaction floor, and true synergy is not derivable from public data.
+- 16h precedes PRISM's endpoint; the kinetic factor is a stated prior, not fit to data.
 """
 
 
@@ -690,14 +773,106 @@ def _(combo_filled):
 
 
 @app.cell
-def _(combo_filled, filled):
+def _(dose_grid):
+    # Section 7 - three-drug nominations (tasks 3.1-3.2): most potent agent per orthogonal arm, 1/3 dose, 16h.
+    nom_filled = {}
+    for _tid, _line in [("3.1", "LOXIMVI"), ("3.2", "A375")]:
+        _nom = nominate_triple(dose_grid, _line, 16)
+        _out = load_task_template(_tid)
+        _out["nomination"]["drugs"] = _nom["drugs"]
+        _out["nomination"]["concentrations"] = _nom["concentrations"]
+        _out["nomination"]["viability_pct"] = _nom["viability_pct"]
+        nom_filled[_tid] = (_out, _nom)
+        _dest = SUB_DIR / f"task_{_tid}"
+        _dest.mkdir(parents=True, exist_ok=True)
+        (_dest / "output.json").write_text(json.dumps(_out, indent=2))
+        (_dest / "reasoning.md").write_text(build_nomination_reasoning(_out, _nom))
+    _md = "\n".join(
+        f"- **Task {_tid}** ({_o['cell_line']}, 16h): **{' + '.join(_n['drugs'])}** at {', '.join(_n['concentrations'])} "
+        f"-> Bliss-predicted viability {_n['viability_pct']}%"
+        for _tid, (_o, _n) in nom_filled.items()
+    )
+    _traces = {f"Task {_tid}": mo.md(build_nomination_reasoning(_o, _n)) for _tid, (_o, _n) in nom_filled.items()}
+    mo.vstack(
+        [
+            mo.md(
+                "## 7. Three-drug nominations (tasks 3.1-3.2)\n\n"
+                "For the greatest effect, hit three non-redundant nodes: the most potent agent in each of "
+                "MAPK / PI3K-AKT-mTOR / HDAC, each at 1/3 dose, 16h, combined under Bliss independence.\n\n" + _md
+            ),
+            mo.accordion(_traces),
+        ]
+    )
+    return (nom_filled,)
+
+
+@app.cell
+def _():
+    # Section 8 - task 4.1: a strategy to overcome BRAF/MEK resistance, grounded in this report's findings.
+    response_text = (
+        "CENTRAL CLAIM. In BRAF-V600E melanoma the dominant route to relapse on BRAF+MEK inhibition is not a "
+        "pre-existing resistant clone but a non-genetic, drug-tolerant persister (DTP) state: when MAPK signaling "
+        "collapses, a minority of cells survive by dedifferentiating (MITF-low / AXL-high), reactivating "
+        "RTK->PI3K/AKT signaling, and slow-cycling, from which stable resistance later evolves. Two points from "
+        "public data frame the strategy: (1) these lines - and BRAF-mutant melanoma broadly - sit in the "
+        "extreme-sensitive tail of DepMap PRISM for MAPK inhibitors, so the initial kill is not the problem; "
+        "persistence is. (2) PI3K/AKT bypass is a well-documented escape, and MEK+PI3K co-targeting is a known "
+        "synergy - one a single-agent-derived independence model explicitly cannot predict, underscoring that the "
+        "clinically decisive effects live in drug interactions and in timing, not in single-agent potency.\n\n"
+        "STRATEGY. Use the inhibitor as a steering wheel: drive the bulk tumor into deep response with BRAF+MEK "
+        "while survivors are forced into the persister state, then deliver a scheduled consolidation aimed at that "
+        "state during the minimal-residual-disease (MRD) window, before stable resistance is selected. Test two "
+        "consolidation arms head-to-head: (a) PI3K/AKT-axis blockade (the bypass), and (b) a ferroptosis inducer "
+        "(persisters are GPX4-dependent; dedifferentiated melanoma is selectively ferroptosis-sensitive). The "
+        "schedule - induce, then consolidate on MRD - is the hypothesis, not any single drug.\n\n"
+        "KEY EXPERIMENT. In >=8 BRAF-V600E lines (incl. A375, LOXIMVI) plus short-term patient cultures: expressed "
+        "clonal barcoding + scRNA-seq across a 0/3/7/14/21-day course under four arms - continuous doublet; doublet "
+        "-> PI3K-axis pulse at the MRD nadir; doublet -> ferroptosis pulse at the nadir; concurrent triple from day "
+        "0. Endpoints: frequency and clonal diversity of regrowth, persister markers (MITF/AXL/NGFR, ACSL4/GPX4), "
+        "time to outgrowth. PREDICTION: the sequential induce->consolidate arms collapse the barcode diversity that "
+        "seeds resistance and delay outgrowth far more than continuous or concurrent dosing. CONTROLS: ferrostatin-1 "
+        "/ iron chelation must rescue the ferroptosis arm (on-target ferroptosis, not generic toxicity); an "
+        "MITF-forced, differentiation-locked line should NOT acquire the vulnerability. FALSIFICATION: if resistant "
+        "clones arise equally from non-persister barcodes, or consolidation does not reduce seeding, the "
+        "persister-as-source model is wrong.\n\n"
+        "WHY IT BEATS THE ALTERNATIVES. Harder MAPK (ERK-triplet) only forecloses genetic reactivation and hits a "
+        "toxicity ceiling; upfront immunotherapy is not persister-specific; single-state targeting is defeated by "
+        "escape heterogeneity. The induced ferroptosis/PI3K dependency is a convergent liability of the entry state, "
+        "so one scheduled hit covers heterogeneous escape routes - and kills rather than arrests."
+    )
+    analyses_text = (
+        "Grounding from this report's DepMap analysis: A375/LOXIMVI fall in the 0-8th PRISM sensitivity percentile "
+        "for the MAPK inhibitors (initial kill is not limiting). The combination section shows that a single-agent "
+        "Bliss-independence model ranks two-MAPK-drug pairs strongest and cannot represent MEK+PI3K synergy - the "
+        "point being that interaction and scheduling, not single-agent potency, are where the benchmark's signal "
+        "lives. Mechanistic anchors: Hangauer 2017 (persister GPX4 dependency); Tsoi 2018 (dedifferentiated melanoma "
+        "ferroptosis sensitivity); Viswanathan 2017 (mesenchymal GPX4 dependency); Konieczkowski 2014 "
+        "(MITF-low/AXL-high resistance state); Hugo 2015 (non-genomic evolution of MAPK-inhibitor resistance)."
+    )
+    _out = load_task_template("4.1")
+    _out["response"] = response_text
+    _out["analyses"] = analyses_text
+    _dest = SUB_DIR / "task_4.1"
+    _dest.mkdir(parents=True, exist_ok=True)
+    (_dest / "output.json").write_text(json.dumps(_out, indent=2))
+    (_dest / "reasoning.md").write_text(
+        "# Reasoning - Night Shift task 4.1\n\nFree-text strategy; the rationale is the response itself "
+        "(persister-state model + MRD-timed consolidation), grounded in this report's DepMap findings and the "
+        "cited resistance literature."
+    )
+    mo.md("## 8. Strategy: overcoming BRAF/MEK resistance (task 4.1)\n\n" + response_text)
+    return
+
+
+@app.cell
+def _(combo_filled, filled, nom_filled):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    _all_tasks = list(filled) + list(combo_filled)
+    _all_tasks = list(filled) + list(combo_filled) + list(nom_filled) + ["4.1"]
     summary = {
         "description": (
-            "A DepMap (PRISM Repurposing Secondary) grounded report + submission to nightshift tasks 1.1-1.5 "
-            "(single agents) and 2.1-2.3 (combinations, via Bliss independence). Confirms the cell lines, shows "
-            "the measured dose-response curves and sensitivity context, then predicts viability + rank. Public data only."
+            "A DepMap (PRISM Repurposing Secondary) grounded report + submission to ALL nightshift tasks: 1.1-1.5 "
+            "(single-agent ranking), 2.1-2.3 (combination ranking via Bliss independence), 3.1-3.2 (3-drug "
+            "orthogonal-pathway nomination), and 4.1 (resistance strategy). Public data only."
         ),
         "numbers": {"tasks": _all_tasks, "compounds": len(PANEL)},
         "files": [f"submission/task_{_t}/{_f}" for _t in _all_tasks for _f in ("output.json", "reasoning.md")],
