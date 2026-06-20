@@ -24,16 +24,6 @@ Each notebook ships a committed session snapshot under [`notebooks/__marimo__/se
 
 `catalog.toml`'s `[[vignette]]` table is the machine-readable version the compose skill reads: each notebook, its reusable helpers, and what it does.
 
-### Applied examples
-
-Composed notebooks that answer one question by reusing the catalog helpers (not core vignettes).
-
-| Notebook | Question | Preview |
-|---|---|---|
-| `nightshift_submission.py` | A DepMap-grounded submission to **every** [Night Shift / Karman](https://karmanai.org/) task: single-agent + combination rankings (1.x, 2.x), 3-drug nominations (3.x), and a resistance strategy (4.1) - all predicted from public data, with a live DepMap analysis (dose-response curves, sensitivity context, a mechanism stress-test, and a druggable-target hunt for 4.1). Self-contained (templates fetched from the live server; helpers inline if nb02/nb03 are absent) | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_submission.py) |
-
-`nightshift_eval.py` is the organizer-side grading companion (code in the repo, **not** on molab): it scores the submission's single-agent and combination predictions against the held-out wet-lab oracle. It needs the private oracle to run and its combination scores (n = 4 per line) are answer-revealing, so it is local-only and its snapshot is gitignored - never published.
-
 ## Getting started
 
 This catalog follows the [vignette-catalog-skills](https://github.com/carpenter-singh-lab/vignette-catalog-skills) pattern.
