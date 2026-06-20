@@ -1,25 +1,34 @@
 {
-  "description": "A DepMap (PRISM Repurposing Secondary) grounded report + submission to nightshift single-agent tasks 1.1-1.5. Confirms the cell lines, shows the measured dose-response curves and sensitivity context, then predicts per-condition % viability and rank. Public data only.",
+  "description": "A DepMap (PRISM Repurposing Secondary) grounded report + submission to nightshift tasks 1.1-1.5 (single agents) and 2.1-2.3 (combinations, via Bliss independence). Confirms the cell lines, shows the measured dose-response curves and sensitivity context, then predicts viability + rank. Public data only.",
   "numbers": {
     "tasks": [
       "1.1",
       "1.2",
       "1.3",
       "1.4",
-      "1.5"
+      "1.5",
+      "2.1",
+      "2.2",
+      "2.3"
     ],
     "compounds": 12
   },
   "files": [
-    "submission/task_1/output.json",
-    "submission/task_1/reasoning.md",
-    "submission/task_1/output.json",
-    "submission/task_1/reasoning.md",
-    "submission/task_1/output.json",
-    "submission/task_1/reasoning.md",
-    "submission/task_1/output.json",
-    "submission/task_1/reasoning.md",
-    "submission/task_1/output.json",
-    "submission/task_1/reasoning.md"
+    "submission/task_1.1/output.json",
+    "submission/task_1.1/reasoning.md",
+    "submission/task_1.2/output.json",
+    "submission/task_1.2/reasoning.md",
+    "submission/task_1.3/output.json",
+    "submission/task_1.3/reasoning.md",
+    "submission/task_1.4/output.json",
+    "submission/task_1.4/reasoning.md",
+    "submission/task_1.5/output.json",
+    "submission/task_1.5/reasoning.md",
+    "submission/task_2.1/output.json",
+    "submission/task_2.1/reasoning.md",
+    "submission/task_2.2/output.json",
+    "submission/task_2.2/reasoning.md",
+    "submission/task_2.3/output.json",
+    "submission/task_2.3/reasoning.md"
   ]
 }

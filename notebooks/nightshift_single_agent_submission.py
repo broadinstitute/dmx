@@ -304,16 +304,23 @@ def bb_get_json(url: str) -> dict:
 
 
 @app.function
-def fill_submission(template: dict, pred_via: dict) -> dict:
-    """Populate a task's output.json: rank + viability_pct from predicted viability (rank 1 = strongest)."""
+def fill_submission(template: dict, value_of) -> dict:
+    """Populate a task's output.json: rank + viability_pct from value_of(condition, line, tp) (rank 1 = strongest)."""
     out = copy.deepcopy(template)
     task_line, task_tp = template.get("cell_line"), template.get("timepoint_h")
     entries = out["rankings"]
-    values = [pred_via[(e["condition"], e.get("cell_line", task_line), e.get("timepoint_h", task_tp))] for e in entries]
+    values = [value_of(e["condition"], e.get("cell_line", task_line), e.get("timepoint_h", task_tp)) for e in entries]
     for position, i in enumerate(sorted(range(len(entries)), key=lambda i: values[i]), start=1):
         entries[i]["rank"] = position
         entries[i]["viability_pct"] = round(values[i], 1)
     return out
+
+
+@app.function
+def combo_viability(condition: str, cell_line: str, timepoint_h: int, pred_via: dict) -> float:
+    """Bliss-independence prediction for a 2-drug combo: product of the single-agent fractional viabilities."""
+    a, b = (d.strip() for d in condition.split("+"))
+    return round(pred_via[(a, cell_line, timepoint_h)] / 100.0 * pred_via[(b, cell_line, timepoint_h)], 1)
 
 
 @app.function
@@ -357,6 +364,45 @@ rank 1 = strongest effect (lowest viability). All 12 compounds resolve in PRISM 
   (different assay, timepoint, and a coarse 4x dose grid).
 - PRISM has a single timepoint, so this method cannot reorder drugs between 24h and 48h.
 - HDAC-inhibitor potency is under-represented by one dose-matched point (polypharmacology).
+"""
+
+
+@app.function
+def build_combo_reasoning(filled: dict) -> str:
+    """Reasoning trace for a combination task - the Bliss-independence model over the single-agent reads."""
+    entries = sorted(filled["rankings"], key=lambda e: e["rank"])
+    pooled = "cell_line" in entries[0]
+    if pooled:
+        head = "| rank | combination | cell line | predicted viability % |\n|---|---|---|---|"
+        body = "\n".join(
+            f"| {e['rank']} | {e['condition']} | {e['cell_line']} | {e['viability_pct']} |" for e in entries
+        )
+    else:
+        head = "| rank | combination | conc | predicted viability % |\n|---|---|---|---|"
+        body = "\n".join(
+            f"| {e['rank']} | {e['condition']} | {e['concentration']} | {e['viability_pct']} |" for e in entries
+        )
+    return f"""# Reasoning - Night Shift task {filled["task"]}
+
+{filled["description"]}
+
+## Method (public-data lookup + Bliss independence)
+
+Each combination is two of the 12 single agents at their stated doses. I predict each single agent's
+48h viability from DepMap PRISM (exactly as in tasks 1.x), then combine under the **Bliss independence**
+null model: the combined fractional viability is the product of the singles (v_AB = v_A x v_B). This is
+the no-interaction expectation - it cannot predict synergy or antagonism, which are not derivable from
+single-agent public data. Combinations are ranked by predicted viability, rank 1 = strongest effect.
+
+## Predicted ranking
+
+{head}
+{body}
+
+## Caveats
+
+- Bliss independence is a null model: real synergy/antagonism will shift the true ranking.
+- Inherits the single-agent caveats (assay / timepoint / dose-grid approximation).
 """
 
 
@@ -543,7 +589,7 @@ def _(pred_via):
     SUB_DIR.mkdir(parents=True, exist_ok=True)
     filled = {}
     for _task_id, _line, _tp in SINGLE_TASKS:
-        _out = fill_submission(load_task_template(_task_id), pred_via)
+        _out = fill_submission(load_task_template(_task_id), lambda c, line, tp: pred_via[(c, line, tp)])
         filled[_task_id] = _out
         _dest = SUB_DIR / f"task_{_task_id}"
         _dest.mkdir(parents=True, exist_ok=True)
@@ -584,16 +630,77 @@ def _(filled):
 
 
 @app.cell
-def _(filled):
+def _(pred_via):
+    # Section 6 - combinations (tasks 2.1-2.3): Bliss independence over the single-agent predictions.
+    combo_filled = {}
+    for _tid in ("2.1", "2.2", "2.3"):
+        _out = fill_submission(load_task_template(_tid), lambda c, line, tp: combo_viability(c, line, tp, pred_via))
+        combo_filled[_tid] = _out
+        _dest = SUB_DIR / f"task_{_tid}"
+        _dest.mkdir(parents=True, exist_ok=True)
+        (_dest / "output.json").write_text(json.dumps(_out, indent=2))
+        (_dest / "reasoning.md").write_text(build_combo_reasoning(_out))
+    combo_df = pl.DataFrame(
+        [
+            {
+                "task": _tid,
+                "combination": _e["condition"],
+                "cell_line": _e.get("cell_line", _o.get("cell_line")),
+                "rank": _e["rank"],
+                "pred_viability_pct": _e["viability_pct"],
+            }
+            for _tid, _o in combo_filled.items()
+            for _e in _o["rankings"]
+        ]
+    )
+    _chart = (
+        alt.Chart(combo_df.filter(pl.col("task") != "2.3"))
+        .mark_bar(opacity=0.85)
+        .encode(
+            x=alt.X("pred_viability_pct:Q", title="predicted combo viability % (lower = stronger)"),
+            y=alt.Y("combination:N", sort="x", title=None),
+            color=alt.Color("cell_line:N", title="line"),
+            tooltip=["combination", "cell_line", "rank", "pred_viability_pct"],
+        )
+        .properties(width=360, height=180)
+        .facet(row=alt.Row("cell_line:N", title=None))
+    )
+    mo.vstack(
+        [
+            mo.md(
+                "## 6. Combinations (tasks 2.1-2.3)\n\n"
+                "Each combination is two of the 12 single agents at their stated doses. The predicted combo "
+                "viability is the **Bliss-independence** product of the two single-agent predictions - the "
+                "no-interaction expectation, so two individually-potent drugs rank strongest. True synergy "
+                "(e.g. between complementary pathway arms) is not capturable from single-agent data; it is "
+                "flagged in each combination's reasoning trace."
+            ),
+            mo.ui.altair_chart(_chart),
+        ]
+    )
+    return (combo_filled,)
+
+
+@app.cell
+def _(combo_filled):
+    # The combination reasoning traces, inline.
+    _traces = {f"Task {_tid}": mo.md(build_combo_reasoning(_o)) for _tid, _o in combo_filled.items()}
+    mo.vstack([mo.md("### Combination reasoning traces (tasks 2.1-2.3)"), mo.accordion(_traces)])
+    return
+
+
+@app.cell
+def _(combo_filled, filled):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    _all_tasks = list(filled) + list(combo_filled)
     summary = {
         "description": (
-            "A DepMap (PRISM Repurposing Secondary) grounded report + submission to nightshift single-agent "
-            "tasks 1.1-1.5. Confirms the cell lines, shows the measured dose-response curves and sensitivity "
-            "context, then predicts per-condition % viability and rank. Public data only."
+            "A DepMap (PRISM Repurposing Secondary) grounded report + submission to nightshift tasks 1.1-1.5 "
+            "(single agents) and 2.1-2.3 (combinations, via Bliss independence). Confirms the cell lines, shows "
+            "the measured dose-response curves and sensitivity context, then predicts viability + rank. Public data only."
         ),
-        "numbers": {"tasks": [t[0] for t in SINGLE_TASKS], "compounds": len(PANEL)},
-        "files": [f"submission/task_{t[0]}/{f}" for t in filled for f in ("output.json", "reasoning.md")],
+        "numbers": {"tasks": _all_tasks, "compounds": len(PANEL)},
+        "files": [f"submission/task_{_t}/{_f}" for _t in _all_tasks for _f in ("output.json", "reasoning.md")],
     }
     (OUT_DIR / "summary.json").write_text(json.dumps(summary, indent=2))
     return
