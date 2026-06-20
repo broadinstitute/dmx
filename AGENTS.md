@@ -36,6 +36,11 @@ Do not improvise alternative launch commands.
 After composing or editing any notebook, run the `validate-notebook.sh` bundled with the installed `vignette-catalog-compose-notebook` skill, passing the notebook path, then open it and look at the outputs.
 Static checks do not catch wrong outputs, empty tables, stale endpoints, broken plots, or sign-convention mistakes.
 
+For a **research** notebook (an evidence-built argument, not just one figure), also run the reasoning gate: `red-team-notebook.sh <notebook.py>` from the same skill.
+It spawns a fresh reviewer that checks the notebook against `research-method.md` for self-confirming models, consensus restated as a finding, and unverified load-bearing claims - the failure modes lint cannot see.
+This repo also wires it as a `Stop` hook (`.claude/settings.json` -> `red-team-on-stop.sh`): a changed `notebooks/*.py` is reviewed when a turn ends, and a flagged notebook blocks the turn until addressed.
+The hook is hash-debounced via `.claude/.red-team-cache/` (gitignored); it reviews each notebook state once and a fix earns a fresh review.
+
 ## Architecture
 
 - Catalog over library. Helpers are top-level `@app.function` cells in numbered notebooks; later notebooks import them via `sys.path`.
