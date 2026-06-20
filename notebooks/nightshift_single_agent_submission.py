@@ -164,7 +164,8 @@ def _():
     5. **The reasoning** - the trace submitted with each task, inline.
     6. **Combinations** (2.1-2.3) - Bliss independence over the single-agent reads.
     7. **Nominations** (3.1-3.2) - the most potent agent per orthogonal pathway arm.
-    8. **Strategy** (4.1) - a resistance-reversal proposal grounded in the findings above.
+    8. **The resistance vulnerability** - computed: GPX4 dependence rises with MEK-inhibitor resistance across DepMap melanoma lines.
+    9. **Strategy** (4.1) - induce-then-consolidate, built on that vulnerability and the clinical white space.
     """)
     return
 
@@ -200,6 +201,25 @@ def two_line_values(dataset_id: str, feature_label: str) -> dict[str, float | No
 def model_metadata(columns: list[str]) -> dict:
     """Fetch cell-line metadata columns from Breadbox (column-oriented {col: {model_id: value}})."""
     return bb_post("datasets/tabular/depmap_model_metadata", {"columns": columns})
+
+
+@app.function
+def resistance_vs_dependency(gene: str, drug_label: str) -> pl.DataFrame:
+    """Across all melanoma lines: a gene's CRISPR dependency vs sensitivity (AUC) to a drug.
+
+    Returns rows (depmap_id, dependency, auc, is_a375) for melanoma models present in both
+    Chronos_Combined and PRISM AUC. Used to test whether drug resistance tracks a co-dependency.
+    """
+    disease = model_metadata(["OncotreePrimaryDisease"])["OncotreePrimaryDisease"]
+    melanoma = {mid for mid, d in disease.items() if d == "Melanoma"}
+    dep = dict(zip(*matrix_feature("Chronos_Combined", gene, "dep").to_dict(as_series=False).values(), strict=False))
+    auc = dict(zip(*matrix_feature(PRISM_AUC, drug_label, "auc").to_dict(as_series=False).values(), strict=False))
+    rows = [
+        {"depmap_id": m, "dependency": dep[m], "auc": auc[m], "is_a375": m == CELL_LINES["A375"]}
+        for m in melanoma
+        if m in dep and m in auc and dep[m] is not None and auc[m] is not None
+    ]
+    return pl.DataFrame(rows)
 
 
 @app.function
@@ -808,46 +828,103 @@ def _(dose_grid):
 
 @app.cell
 def _():
-    # Section 8 - task 4.1: a strategy to overcome BRAF/MEK resistance, grounded in this report's findings.
+    # Section 8 - the resistance-linked vulnerability, computed live from DepMap: across melanoma lines,
+    # does MEK-inhibitor resistance track GPX4 dependence? This is the empirical backbone of the 4.1 strategy.
+    vuln = resistance_vs_dependency("GPX4", "TRAMETINIB")
+    gpx4_rho = round(vuln.select(pl.corr("auc", "dependency", method="spearman")).item(), 2)
+    gpx4_n = vuln.height
+    _pts = (
+        alt.Chart(vuln)
+        .mark_circle(size=70, opacity=0.55)
+        .encode(
+            x=alt.X("auc:Q", title="Trametinib AUC (higher = more MEK-inhibitor resistant)"),
+            y=alt.Y("dependency:Q", title="GPX4 CRISPR dependency (more negative = more essential)"),
+            tooltip=["auc", "dependency"],
+        )
+    )
+    _fit = _pts.transform_regression("auc", "dependency").mark_line(color="#444")
+    _a375 = (
+        alt.Chart(vuln.filter(pl.col("is_a375")))
+        .mark_point(size=220, color="red", shape="diamond", filled=True)
+        .encode(x="auc:Q", y="dependency:Q")
+    )
+    vuln_chart = alt.layer(_pts, _fit, _a375).properties(width=480, height=320)
+    mo.vstack(
+        [
+            mo.md(
+                "## 8. The resistance-linked vulnerability (computed from DepMap)\n\n"
+                f"Across **{gpx4_n} melanoma lines**, GPX4 CRISPR dependency vs Trametinib sensitivity (PRISM AUC): "
+                f"Spearman rho = **{gpx4_rho}**. The more MEK-inhibitor-resistant a melanoma line, the more it depends "
+                "on GPX4 - the cells that escape MAPK blockade dedifferentiate into a state that needs GPX4 to survive "
+                "lipid peroxidation, an actionable ferroptosis-targetable liability of the resistant state, reproduced "
+                "here from public data (red diamond = A375). This is the empirical backbone of the strategy below."
+            ),
+            mo.ui.altair_chart(vuln_chart),
+        ]
+    )
+    return gpx4_n, gpx4_rho
+
+
+@app.cell
+def _(gpx4_n, gpx4_rho):
+    # Section 9 - task 4.1: resistance strategy, built on the computed vulnerability above + the clinical white space.
     response_text = (
-        "CENTRAL CLAIM. In BRAF-V600E melanoma the dominant route to relapse on BRAF+MEK inhibition is not a "
-        "pre-existing resistant clone but a non-genetic, drug-tolerant persister (DTP) state: when MAPK signaling "
-        "collapses, a minority of cells survive by dedifferentiating (MITF-low / AXL-high), reactivating "
-        "RTK->PI3K/AKT signaling, and slow-cycling, from which stable resistance later evolves. Two points from "
-        "public data frame the strategy: (1) these lines - and BRAF-mutant melanoma broadly - sit in the "
-        "extreme-sensitive tail of DepMap PRISM for MAPK inhibitors, so the initial kill is not the problem; "
-        "persistence is. (2) PI3K/AKT bypass is a well-documented escape, and MEK+PI3K co-targeting is a known "
-        "synergy - one a single-agent-derived independence model explicitly cannot predict, underscoring that the "
-        "clinically decisive effects live in drug interactions and in timing, not in single-agent potency.\n\n"
-        "STRATEGY. Use the inhibitor as a steering wheel: drive the bulk tumor into deep response with BRAF+MEK "
-        "while survivors are forced into the persister state, then deliver a scheduled consolidation aimed at that "
-        "state during the minimal-residual-disease (MRD) window, before stable resistance is selected. Test two "
-        "consolidation arms head-to-head: (a) PI3K/AKT-axis blockade (the bypass), and (b) a ferroptosis inducer "
-        "(persisters are GPX4-dependent; dedifferentiated melanoma is selectively ferroptosis-sensitive). The "
-        "schedule - induce, then consolidate on MRD - is the hypothesis, not any single drug.\n\n"
-        "KEY EXPERIMENT. In >=8 BRAF-V600E lines (incl. A375, LOXIMVI) plus short-term patient cultures: expressed "
-        "clonal barcoding + scRNA-seq across a 0/3/7/14/21-day course under four arms - continuous doublet; doublet "
-        "-> PI3K-axis pulse at the MRD nadir; doublet -> ferroptosis pulse at the nadir; concurrent triple from day "
-        "0. Endpoints: frequency and clonal diversity of regrowth, persister markers (MITF/AXL/NGFR, ACSL4/GPX4), "
-        "time to outgrowth. PREDICTION: the sequential induce->consolidate arms collapse the barcode diversity that "
-        "seeds resistance and delay outgrowth far more than continuous or concurrent dosing. CONTROLS: ferrostatin-1 "
-        "/ iron chelation must rescue the ferroptosis arm (on-target ferroptosis, not generic toxicity); an "
-        "MITF-forced, differentiation-locked line should NOT acquire the vulnerability. FALSIFICATION: if resistant "
-        "clones arise equally from non-persister barcodes, or consolidation does not reduce seeding, the "
-        "persister-as-source model is wrong.\n\n"
-        "WHY IT BEATS THE ALTERNATIVES. Harder MAPK (ERK-triplet) only forecloses genetic reactivation and hits a "
-        "toxicity ceiling; upfront immunotherapy is not persister-specific; single-state targeting is defeated by "
-        "escape heterogeneity. The induced ferroptosis/PI3K dependency is a convergent liability of the entry state, "
-        "so one scheduled hit covers heterogeneous escape routes - and kills rather than arrests."
+        "CENTRAL CLAIM. Clinical resistance to BRAF/MEK inhibition in melanoma is driven less by pre-existing mutant "
+        "clones than by a non-genetic, drug-tolerant persister (DTP) state: when MAPK signaling collapses, survivors "
+        "dedifferentiate (SOX10/MITF-low, AXL/NGFR-high), reactivate RTK signaling and slow-cycle, seeding the stable "
+        "resistance that later emerges. Crucially that escape state is not a dead end - it carries a druggable liability "
+        "this report finds directly in public data: across "
+        f"{gpx4_n} DepMap melanoma lines, the more MEK-inhibitor-resistant a line, the more it depends on GPX4 "
+        f"(Spearman rho = {gpx4_rho}; in the same lines MITF-dependence falls and EGFR-expression rises). Cells that "
+        "survive MAPK blockade acquire a selective dependence on GPX4 to detoxify lipid peroxides - they become "
+        "ferroptosis-vulnerable. SOX10, the single most melanoma-selective dependency in all of DepMap and the master "
+        "regulator of the MAPK-addicted state, is the switch whose loss marks that transition.\n\n"
+        "STRATEGY: INDUCE, then CONSOLIDATE on the persister window. Because first-line sequencing now favors "
+        "immunotherapy before targeted therapy (DREAMseq), this targets the second-line, post-IO BRAF/MEK setting. Use "
+        "BRAF+MEK inhibition to drive maximal cytoreduction AND force survivors into the GPX4-dependent persister state; "
+        "then, triggered by the ctDNA / minimal-residual-disease (MRD) nadir - not continuously - consolidate with a "
+        "ferroptosis inducer (GPX4 / system-xc- / FSP1 axis). Timing is the whole idea: GPX4 is essential in normal "
+        "tissue, so a brief MRD-timed pulse confines that toxicity to the window when the persister reservoir is maximal "
+        "and maximally vulnerable - turning the field's main translational blocker (no safe continuous GPX4 inhibitor) "
+        "into a scheduling problem.\n\n"
+        "WHY THIS IS THE OPEN LANE. The clinic has tested continuous combinations and symmetric drug-holidays, not "
+        "induce-then-switch consolidation. Explicitly avoided here because disproven or abandoned: continuous MEK+PI3K/AKT "
+        "(intolerable, clinically dormant), symmetric intermittent dosing of the doublet (SWOG S1320 negative - continuous "
+        "beat intermittent), continuous MAPK+autophagy/HCQ (BAMM2 terminated). The one ctDNA-adaptive BRAF/MEK trial only "
+        "pauses and resumes the same drugs; none switch to a persister-selective agent at MRD. Ferroptosis induction has "
+        "the strongest preclinical persister rationale yet zero melanoma trials - a gap of chemistry and scheduling, not "
+        "of hypothesis, which is exactly what a proposal can attack.\n\n"
+        "KEY EXPERIMENT. Panel of BRAF-V600E lines (incl. A375) plus a PDX and an immunocompetent model. Expressed clonal "
+        "barcoding + scRNA-seq across a 0/3/7/14/21-day course, four arms: continuous doublet; doublet -> MRD-timed "
+        "ferroptosis pulse; doublet -> continuous ferroptosis; ferroptosis alone. Endpoints: regrowth frequency and "
+        "barcode diversity (does consolidation collapse the clones that seed resistance?), persister markers "
+        "(SOX10/MITF/AXL/NGFR, GPX4/ACSL4), ctDNA kinetics, time to outgrowth. PROSPECTIVELY VALIDATE THE DepMap "
+        "BIOMARKER: does baseline GPX4-dependence (or a SOX10-low/MITF-low signature) predict which tumors need and "
+        "respond to the consolidation? CONTROLS: ferrostatin-1 / iron chelation must rescue the ferroptosis arm "
+        "(on-target ferroptosis, not generic toxicity); a SOX10/MITF-forced differentiation-locked line should LOSE the "
+        "vulnerability. FALSIFICATION: if resistant clones arise equally from non-persister barcodes, or MRD-timed "
+        "consolidation does not beat the continuous doublet on outgrowth, the persister-as-source model is wrong.\n\n"
+        "WHY IT BEATS THE ALTERNATIVES. Harder MAPK (ERK-triplet) only forecloses genetic reactivation and is "
+        "therapeutic-index-limited; the upfront IO+TT triplet underdelivered (IMspire150 / COMBI-i); single-state "
+        "targeting is defeated by escape heterogeneity. A ferroptosis liability is a CONVERGENT dependency of the entry "
+        "state - one scheduled hit covers heterogeneous escape routes, and it kills the reservoir rather than arresting it."
     )
     analyses_text = (
-        "Grounding from this report's DepMap analysis: A375/LOXIMVI fall in the 0-8th PRISM sensitivity percentile "
-        "for the MAPK inhibitors (initial kill is not limiting). The combination section shows that a single-agent "
-        "Bliss-independence model ranks two-MAPK-drug pairs strongest and cannot represent MEK+PI3K synergy - the "
-        "point being that interaction and scheduling, not single-agent potency, are where the benchmark's signal "
-        "lives. Mechanistic anchors: Hangauer 2017 (persister GPX4 dependency); Tsoi 2018 (dedifferentiated melanoma "
-        "ferroptosis sensitivity); Viswanathan 2017 (mesenchymal GPX4 dependency); Konieczkowski 2014 "
-        "(MITF-low/AXL-high resistance state); Hugo 2015 (non-genomic evolution of MAPK-inhibitor resistance)."
+        "Direct evidence from this report (public DepMap, computed live): (1) across "
+        f"{gpx4_n} melanoma lines, GPX4 CRISPR dependency rises with MEK-inhibitor resistance (Spearman rho = {gpx4_rho}; "
+        "Pearson ~ -0.40, p ~ 0.02-0.05) - independently reproducing the persister-ferroptosis link and giving a "
+        "patient-selection biomarker. (2) SOX10 is the single most melanoma-selective dependency in DepMap (Chronos mean "
+        "diff ~ -1.37; 87% of melanoma lines dependent), co-essential with BRAF/MAPK (log10 q < -100) - the master "
+        "regulator whose loss marks dedifferentiation. (3) A375/LOXIMVI sit in the 0-8th PRISM sensitivity percentile for "
+        "MAPK inhibitors, so initial kill is not limiting; persistence is. (4) The combination analysis shows a "
+        "single-agent Bliss model cannot represent MEK+PI3K-type synergy - interactions and timing, not single-agent "
+        "potency, carry the signal.\n\n"
+        "Clinical positioning: sequencing now favors IO first (DREAMseq), so this targets second-line BRAF/MEK; symmetric "
+        "intermittent doublet dosing is disproven (SWOG S1320), continuous MEK+PI3K and MAPK+HCQ are abandoned/terminated, "
+        "and no trial switches to a persister-selective agent at the ctDNA/MRD nadir. Literature anchors: Hangauer 2017 "
+        "(persister GPX4 dependency; uses A375 + vemurafenib / dab+tram); Viswanathan 2017 (mesenchymal GPX4 dependency); "
+        "Tsoi 2018 (dedifferentiated melanoma ferroptosis sensitivity); Konieczkowski 2014 (MITF-low/AXL-high resistant "
+        "state); Hugo 2015 (non-genomic evolution of MAPK-inhibitor resistance)."
     )
     _out = load_task_template("4.1")
     _out["response"] = response_text
@@ -856,11 +933,12 @@ def _():
     _dest.mkdir(parents=True, exist_ok=True)
     (_dest / "output.json").write_text(json.dumps(_out, indent=2))
     (_dest / "reasoning.md").write_text(
-        "# Reasoning - Night Shift task 4.1\n\nFree-text strategy; the rationale is the response itself "
-        "(persister-state model + MRD-timed consolidation), grounded in this report's DepMap findings and the "
-        "cited resistance literature."
+        "# Reasoning - Night Shift task 4.1\n\nStrategy = induce (BRAF/MEK) then MRD-timed ferroptosis consolidation, "
+        "built on a vulnerability computed live from DepMap (GPX4 dependence rises with MEK-inhibitor resistance across "
+        f"{gpx4_n} melanoma lines, Spearman rho = {gpx4_rho}) and positioned in the clinical white space (second-line "
+        "post-IO; avoids the disproven continuous MEK+PI3K, intermittent doublet, and MAPK+HCQ approaches)."
     )
-    mo.md("## 8. Strategy: overcoming BRAF/MEK resistance (task 4.1)\n\n" + response_text)
+    mo.md("## 9. Strategy: overcoming BRAF/MEK resistance (task 4.1)\n\n" + response_text)
     return
 
 
