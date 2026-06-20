@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "skillPath": "skills/agent-browser/SKILL.md",
+      "computedHash": "228f87d57035100d9dc6efcfc05aafd4b6e3962adacaa04b8217ab2fadb15dc8"
+    },
     "marimo-pair": {
       "source": "marimo-team/marimo-pair",
       "sourceType": "github",
@@ -17,7 +23,7 @@
       "source": "carpenter-singh-lab/vignette-catalog-skills",
       "sourceType": "github",
       "skillPath": "skills/vignette-catalog-compose-notebook/SKILL.md",
-      "computedHash": "7a88070711eeed7f7a0b0856da01b7e06b437ebb7d107faf67ac1cff53be326e"
+      "computedHash": "ea2a7bdede9531835d5acc90f0439c89823969a9974b1d4277843d47a35d167d"
     },
     "vignette-catalog-scaffold": {
       "source": "carpenter-singh-lab/vignette-catalog-skills",
