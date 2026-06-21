@@ -1,0 +1,33 @@
+{
+  "description": "Night Shift melanoma drug-response predictions (v1, reasoning baseline): per-condition CTG % viability for A375 (BRAF-V600E) and LOXIMVI from judgment effect floors + a CTG-kinetics model. Predictions, not measurements.",
+  "numbers": {
+    "tasks_submitted": 11,
+    "A375_BRAF_dependency_chronos": -1.499971974,
+    "GDSC2_dabrafenib_AUC_A375": 0.3476069243,
+    "GDSC2_dabrafenib_AUC_LOXIMVI": 0.7615090419
+  },
+  "files": [
+    "data/processed/nightshift_v1/1.1/output.json",
+    "data/processed/nightshift_v1/1.1/reasoning.md",
+    "data/processed/nightshift_v1/1.2/output.json",
+    "data/processed/nightshift_v1/1.2/reasoning.md",
+    "data/processed/nightshift_v1/1.3/output.json",
+    "data/processed/nightshift_v1/1.3/reasoning.md",
+    "data/processed/nightshift_v1/1.4/output.json",
+    "data/processed/nightshift_v1/1.4/reasoning.md",
+    "data/processed/nightshift_v1/1.5/output.json",
+    "data/processed/nightshift_v1/1.5/reasoning.md",
+    "data/processed/nightshift_v1/2.1/output.json",
+    "data/processed/nightshift_v1/2.1/reasoning.md",
+    "data/processed/nightshift_v1/2.2/output.json",
+    "data/processed/nightshift_v1/2.2/reasoning.md",
+    "data/processed/nightshift_v1/2.3/output.json",
+    "data/processed/nightshift_v1/2.3/reasoning.md",
+    "data/processed/nightshift_v1/3.1/output.json",
+    "data/processed/nightshift_v1/3.1/reasoning.md",
+    "data/processed/nightshift_v1/3.2/output.json",
+    "data/processed/nightshift_v1/3.2/reasoning.md",
+    "data/processed/nightshift_v1/4.1/output.json",
+    "data/processed/nightshift_v1/4.1/reasoning.md"
+  ]
+}

@@ -24,6 +24,20 @@ Each notebook ships a committed session snapshot under [`notebooks/__marimo__/se
 
 `catalog.toml`'s `[[vignette]]` table is the machine-readable version the compose skill reads: each notebook, its reusable helpers, and what it does.
 
+## Submissions
+
+Composed notebooks that answer the [Karman](https://mcp.karmanai.org/tasks) melanoma drug-response benchmark - predict CellTiter-Glo % viability for A375 (BRAF-V600E) and LOXIMVI under a MAPK-inhibitor panel.
+Three submissions, each deleting one layer of hand-tuning and replacing it with measured data; v2 and v3 reuse the v1 engine unchanged and only change how the effect floors are produced.
+Each notebook is self-contained (it vendors the shared engine rather than importing siblings), so any row opens and re-runs as a standalone molab gist; v3 reads ChEMBL from a local copy when present and falls back to the ChEMBL REST API otherwise.
+
+| Submission | Approach | Preview |
+|---|---|---|
+| `nightshift_v1_reasoning.py` | Reasoning baseline: pharmacology + DepMap-anchored *judgment* floors + a CTG-kinetics model | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_v1_reasoning.py) |
+| `nightshift_v2_data_floors.py` | Floors read straight off PRISM Secondary dose-level viability at the task dose, not judgment | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_v2_data_floors.py) |
+| `nightshift_v3_chembl_calibrated.py` | v2 floors slid to the exact task dose along a ChEMBL-IC50 Hill curve, with the 1/3-dose retention from the same curve | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_v3_chembl_calibrated.py) |
+
+Each writes its populated `output.json` + `reasoning.md` per task under `data/processed/nightshift_v*/`, with a `summary.json` envelope the index notebook can pick up.
+
 ## Getting started
 
 This catalog follows the [vignette-catalog-skills](https://github.com/carpenter-singh-lab/vignette-catalog-skills) pattern.
