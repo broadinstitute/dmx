@@ -20,12 +20,12 @@
     },
     {
       "id": "Hbol",
-      "code_hash": "af788171c4b4d9247caa01f4803e3490",
+      "code_hash": "2e4bd18eac5d73c3c88ff103f5b3e25b",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"night-shift-submission-v1-reasoning-baseline\">Night Shift submission v1 - reasoning baseline</h1>\n<span class=\"paragraph\">First of three submissions to the Karman melanoma benchmark, each removing one\nlayer of hand-tuning and replacing it with measured data:</span>\n<ul>\n<li><strong>v1 (this notebook):</strong> pharmacology reasoning + DepMap-<em>anchored-by-judgment</em>\n  effect floors + a CTG-kinetics prior.</li>\n<li><strong>v2 (<code>nightshift_v2_data_floors.py</code>):</strong> the same kinetics engine, but floors\n  <em>derived</em> from PRISM/GDSC dose-level viability instead of judgment.</li>\n<li><strong>v3 (<code>nightshift_v3_chembl_calibrated.py</code>):</strong> v2 with the dose-response\n  calibrated to ChEMBL potency, so dose-saturation stops being a guess too.</li>\n</ul>\n<span class=\"paragraph\">The task: predict CellTiter-Glo (CTG) % viability for two melanoma lines (A375,\nLOXIMVI) under MAPK and other inhibitors at 16 / 24 / 48 h, and rank conditions\nby effect. No readout is provided, so these are predictions. Two checkable facts\ndrive every ranking; this notebook verifies both against DepMap before predicting:</span>\n<ol>\n<li><strong>Addiction.</strong> A375 is BRAF-V600E-addicted; LOXIMVI is not BRAF-V600E-driven.\n   That sets whether a BRAF/MEK inhibitor does anything.</li>\n<li><strong>CTG kinetics.</strong> CTG reads live-cell ATP. MAPK inhibitors are <em>cytostatic</em>\n   (arrest, slow kill) so they barely separate from vehicle at 24 h; broadly\n   <em>cytotoxic</em> agents (HDAC, mTOR) drop viability fast. <strong>The most potent drug\n   long-term is often not the lowest-viability one at 24 h.</strong></li>\n</ol>\n<span class=\"paragraph\">This file also defines the shared engine (<code>predict_single</code>, <code>predict_combo</code>,\n<code>run_submission</code>, ...) that v2 and v3 import - they change only how the floors\nare produced.</span></span>"
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"night-shift-submission-reasoning-baseline\">Night Shift submission - reasoning baseline</h1>\n<span class=\"paragraph\">Predict CellTiter-Glo (CTG) % viability for two melanoma lines (A375, LOXIMVI)\nunder a MAPK-inhibitor panel at 16 / 24 / 48 h, and rank conditions by effect.\nNo experimental readout is provided, so these are predictions.</span>\n<span class=\"paragraph\">The predictions turn on two hypotheses, and the cells below are the loop that tests\nthem - state a hypothesis, run a pull, look at what came back - not a pile of tables:</span>\n<ul>\n<li><strong>H1 (cell-line identity).</strong> A375 is BRAF-V600E-addicted; LOXIMVI is not\n  BRAF-V600E-driven. Tested against DepMap CRISPR dependency and drug sensitivity in\n  Instruments 1-2. The genetics pull settles A375 cleanly but leaves LOXIMVI\n  <em>unsettled</em> - which is exactly the seam a later data source can pull apart.</li>\n<li><strong>H2 (assay kinetics).</strong> At a 16-48 h CTG endpoint, cytostatic MAPK inhibitors barely\n  move viability while broadly cytotoxic agents (HDAC, mTOR) drop it fast, so <strong>the\n  lowest-viability drug at 24 h is usually not the most potent one.</strong> This is a\n  mechanistic prior the model encodes; with no readout it is <em>not</em> tested here, and its\n  falsifier is named at the end.</li>\n</ul>\n<span class=\"paragraph\">The terminal hypothesis - what gets committed - is the ranked, predicted viability. Each\ndrug gets a per-line <strong>effect floor</strong> set by judgment (anchored to the DepMap data, but a\njudgment call) and a kinetic class, run through\n<code>floor + (100-floor) * (1 - realized_fraction(t, class))</code>. These rankings are model\noutputs, not independent findings; the \"evidence vs assumption\" cell at the end marks\nwhich parts are load-bearing data and which are my knobs. The mechanics are vendored in\nthe appendix so this file runs as a standalone gist; it is one of a small set of\nsubmissions that swap how the floors are produced (see the repo README).</span></span>"
           }
         }
       ],
@@ -33,7 +33,7 @@
     },
     {
       "id": "MJUe",
-      "code_hash": "7fa2977524d0e7c6878359a438b90acc",
+      "code_hash": "f87af7b90b70bb0af2dc4665a4efe41c",
       "outputs": [
         {
           "type": "data",
@@ -46,214 +46,6 @@
     },
     {
       "id": "vblA",
-      "code_hash": "738a63459950f933ddca745d5a93ddf9",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "bkHC",
-      "code_hash": "359d76a1fc712333e91145504a74848a",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "lEQa",
-      "code_hash": "090eea4ae547879b5f31a1c9f487b324",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "PKri",
-      "code_hash": "03be0977f72bc86dfcc0777a29fceb2c",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "Xref",
-      "code_hash": "69775135f8dde1a74f300efa95c61ccc",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "SFPL",
-      "code_hash": "55abad23e4dfd8691f168c744b8007e0",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "BYtC",
-      "code_hash": "2eedfd3c3d4a336fc3b85dbc9ae01153",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "RGSE",
-      "code_hash": "3c48ffe7d8e6790ebc16ba5b7e0bdfc5",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "Kclp",
-      "code_hash": "da565b1af387762a2ab258280f8872ae",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "emfo",
-      "code_hash": "b5a48d93f0976ebd4871d21e94c4f572",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "Hstk",
-      "code_hash": "f68789315fa3e3e79e9b6249b8345260",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "nWHF",
-      "code_hash": "74d1fdc2c6dd9ecf7c7028b168082b2b",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "iLit",
-      "code_hash": "2a4c1b24422c8c99df12d16419d641c3",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "ZHCJ",
-      "code_hash": "bf7343c9197407dd88994acfa21a4810",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "ROlb",
-      "code_hash": "8dd2b36e15bba6094613d6d4befe3dfa",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "qnkX",
-      "code_hash": "92a1c0040ae3ea55736f3bd3f4a537a1",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "TqIu",
       "code_hash": "9a266030b2add97ec58c637a51e43f52",
       "outputs": [
         {
@@ -266,33 +58,33 @@
       "console": []
     },
     {
-      "id": "Vxnm",
+      "id": "bkHC",
       "code_hash": "3bc6424d1503ceccfac8facef43bea29",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='Vxnm-0' random-id='b1523534-3da6-6ea9-65aa-c985fc845fc6'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;feature&#92;&quot;:&#92;&quot;BRAF dependency (Chronos)&#92;&quot;,&#92;&quot;A375&#92;&quot;:-1.499971974,&#92;&quot;LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;feature&#92;&quot;:&#92;&quot;MAP2K1 (MEK1) dependency&#92;&quot;,&#92;&quot;A375&#92;&quot;:-1.3657303916,&#92;&quot;LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;feature&#92;&quot;:&#92;&quot;BRAF hotspot mutation&#92;&quot;,&#92;&quot;A375&#92;&quot;:2.0,&#92;&quot;LOXIMVI&#92;&quot;:1.0}]&quot;' data-total-rows='3' data-total-columns='3' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;feature&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;A375&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;LOXIMVI&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/html": "<marimo-ui-element object-id='bkHC-0' random-id='1ccea0cc-b54e-5390-826a-73d566a5b778'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;feature&#92;&quot;:&#92;&quot;BRAF dependency (Chronos)&#92;&quot;,&#92;&quot;A375&#92;&quot;:-1.499971974,&#92;&quot;LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;feature&#92;&quot;:&#92;&quot;MAP2K1 (MEK1) dependency&#92;&quot;,&#92;&quot;A375&#92;&quot;:-1.3657303916,&#92;&quot;LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;feature&#92;&quot;:&#92;&quot;BRAF hotspot mutation&#92;&quot;,&#92;&quot;A375&#92;&quot;:2.0,&#92;&quot;LOXIMVI&#92;&quot;:1.0}]&quot;' data-total-rows='3' data-total-columns='3' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;feature&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;A375&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;LOXIMVI&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
           }
         }
       ],
       "console": []
     },
     {
-      "id": "DnEU",
-      "code_hash": "346e3dfeb463b5b4e63e5385580c2151",
+      "id": "lEQa",
+      "code_hash": "d3567fb9e05851eee13432d32fecd888",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Read-out (live).</strong> A375 BRAF dependency = <code>-1.499971974</code>, MAP2K1 = <code>-1.3657303916</code> - a MAPK-addicted BRAF-V600E line. LOXIMVI BRAF dependency = <code>None</code> (absent from the CRISPR screen). This is a textbook prior the notebook <em>verifies</em>, not a discovery; the load-bearing evidence for sparing BRAF inhibitors in LOXIMVI is the GDSC2 drug data below.</span></span>"
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>H1, tested against CRISPR.</strong> A375 BRAF dependency = <code>-1.499971974</code>, MAP2K1 = <code>-1.3657303916</code> - strongly negative, so H1's A375 half is confirmed: it dies without BRAF/MEK, a BRAF-V600E-addicted line. H1's LOXIMVI half is <em>not</em> settled here: LOXIMVI BRAF dependency = <code>None</code> - it is absent from the CRISPR screen, so genetics is silent on it (silence is not confirmation). Whether LOXIMVI is BRAF-inhibitor-resistant rests entirely on the drug data below - and that is the exact seam where a different screen can later disagree.</span></span>"
           }
         }
       ],
       "console": []
     },
     {
-      "id": "ulZA",
+      "id": "PKri",
       "code_hash": "0478f1dc1d4f5dcdb049c8442b39ba70",
       "outputs": [
         {
@@ -305,13 +97,221 @@
       "console": []
     },
     {
-      "id": "ecfG",
+      "id": "Xref",
       "code_hash": "3cf2d21a6109cbb4f47c24c0014fdd40",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='ecfG-0' random-id='bfdc334e-0f70-269f-bdb9-dc40486504ca'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.56,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.686,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.261,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.385,&#92;&quot;GDSC2_A375&#92;&quot;:0.348,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.762},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.492,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.382,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.389,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.351,&#92;&quot;GDSC2_A375&#92;&quot;:0.413,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.533},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.373,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.384,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.46,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.357,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.765,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.827,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.898,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.825,&#92;&quot;GDSC2_A375&#92;&quot;:0.958,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.921},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.899,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.889,&#92;&quot;GDSC2_A375&#92;&quot;:0.896,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.773},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.46,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.288,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null}]&quot;' data-total-rows='10' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;PRISM_A375&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;PRISM_LOXIMVI&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;GDSC2_A375&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;GDSC2_LOXIMVI&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/html": "<marimo-ui-element object-id='Xref-0' random-id='e6ffe510-a340-8943-e86e-b2d50d452984'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.56,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.686,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.261,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.385,&#92;&quot;GDSC2_A375&#92;&quot;:0.348,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.762},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.492,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.382,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.389,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.351,&#92;&quot;GDSC2_A375&#92;&quot;:0.413,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.533},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.373,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.384,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.46,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.357,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.765,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.827,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.898,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.825,&#92;&quot;GDSC2_A375&#92;&quot;:0.958,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.921},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.899,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.889,&#92;&quot;GDSC2_A375&#92;&quot;:0.896,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:0.773},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;PRISM_A375&#92;&quot;:0.46,&#92;&quot;PRISM_LOXIMVI&#92;&quot;:0.288,&#92;&quot;GDSC2_A375&#92;&quot;:null,&#92;&quot;GDSC2_LOXIMVI&#92;&quot;:null}]&quot;' data-total-rows='10' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;PRISM_A375&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;PRISM_LOXIMVI&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;GDSC2_A375&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;GDSC2_LOXIMVI&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "d809a0b6cb2ddff95df24457ac1ef3e9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>H1's LOXIMVI half, tested against drug response.</strong> GDSC2 dabrafenib: A375 <code>0.35</code> (sensitive) vs LOXIMVI <code>0.76</code> (resistant) - this longer assay settles LOXIMVI as BRAF-inhibitor-resistant, so H1 stands on this evidence. (Hold that lightly: a different screen disagrees, and a companion submission leads with that collision.) Consistent with H2, PRISM panobinostat is the single most potent agent in both lines (A375 <code>0.46</code> / LOXIMVI <code>0.29</code>) - a broadly cytotoxic HDAC inhibitor, not a MAPK drug. These live numbers anchor the floors below.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "ad991bacedfabb49903e986812495056",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"effect-floors-judgment-data-anchored\">Effect floors (judgment, data-anchored)</h2>\n<span class=\"paragraph\">The floors below are curated estimates from the Instrument-2 AUCs + dose-vs-IC50\nmargin + pathway dependence. BRAF inhibitors: deep in A375, shallow in LOXIMVI.\nPI3K/AKT: weak everywhere. Panobinostat: deep in both (cytotoxic). These judgment\nfloors are this submission's one soft spot - the obvious next step is to read them\nstraight from data instead.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "a9cc5cf12decc9375ef17835e0fb840e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='RGSE-0' random-id='6c20483f-f702-4157-9c5a-50d08eb89563'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;BRAF-V600E&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:45,&#92;&quot;floor_LOXIMVI&#92;&quot;:92,&#92;&quot;conc&#92;&quot;:&#92;&quot;1 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;BRAF-V600E&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:28,&#92;&quot;floor_LOXIMVI&#92;&quot;:82,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;BRAF-V600E&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:33,&#92;&quot;floor_LOXIMVI&#92;&quot;:82,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:30,&#92;&quot;floor_LOXIMVI&#92;&quot;:60,&#92;&quot;conc&#92;&quot;:&#92;&quot;10 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:32,&#92;&quot;floor_LOXIMVI&#92;&quot;:62,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:38,&#92;&quot;floor_LOXIMVI&#92;&quot;:62,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:36,&#92;&quot;floor_LOXIMVI&#92;&quot;:62,&#92;&quot;conc&#92;&quot;:&#92;&quot;30 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;multikinase/VEGFR&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;mixed&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:55,&#92;&quot;floor_LOXIMVI&#92;&quot;:58,&#92;&quot;conc&#92;&quot;:&#92;&quot;5 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;PI3K-alpha&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:80,&#92;&quot;floor_LOXIMVI&#92;&quot;:78,&#92;&quot;conc&#92;&quot;:&#92;&quot;5 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;pan-AKT&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:78,&#92;&quot;floor_LOXIMVI&#92;&quot;:72,&#92;&quot;conc&#92;&quot;:&#92;&quot;5 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;drug&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;mTORC1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;mixed&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:50,&#92;&quot;floor_LOXIMVI&#92;&quot;:52,&#92;&quot;conc&#92;&quot;:&#92;&quot;500 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;pan-HDAC&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytotoxic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:30,&#92;&quot;floor_LOXIMVI&#92;&quot;:25,&#92;&quot;conc&#92;&quot;:&#92;&quot;50 nM&#92;&quot;}]&quot;' data-total-rows='12' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;target&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;class&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;floor_A375&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;floor_LOXIMVI&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;conc&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "302ad8ddbde971c76f9409e3e87c9b90",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Kclp-0' random-id='f6cf7c05-4db4-a6ae-3e8b-b8c212078bf0'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;50 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:54},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;500 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;10 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:79},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:5,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:80},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:6,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:80},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:7,&#92;&quot;condition&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:80},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:8,&#92;&quot;condition&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;30 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:81},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:9,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:81},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:10,&#92;&quot;condition&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;1 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:84},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:11,&#92;&quot;condition&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:93},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:12,&#92;&quot;condition&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:94},{&#92;&quot;_marimo_row_id&#92;&quot;:12,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;50 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:38},{&#92;&quot;_marimo_row_id&#92;&quot;:13,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:57},{&#92;&quot;_marimo_row_id&#92;&quot;:14,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;10 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:58},{&#92;&quot;_marimo_row_id&#92;&quot;:15,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:59}]&quot;' data-total-rows='48' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='16' data-field-types='[[&quot;cell_line&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;timepoint_h&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;rank&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;condition&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;concentration&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;viability_pct&quot;,[&quot;integer&quot;,&quot;i64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "e58636ab24a0fc0b106420f9e6744ac3",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='emfo-0' random-id='8c8b7758-050c-0094-d4ec-e739c7bbc7e6'><marimo-vega data-initial-value='{}' data-label='null' data-spec='{&quot;config&quot;:{&quot;view&quot;:{&quot;continuousWidth&quot;:300,&quot;continuousHeight&quot;:300}},&quot;data&quot;:{&quot;url&quot;:&quot;data:application/vnd.apache.arrow.file;base64,QVJST1cxAAD/////uAEAAAQAAADy////FAAAAAQAAQAAAAoACwAIAAoABAD4////DAAAAAgACAAAAAQABwAAAEQBAAAEAQAA0AAAAKAAAABsAAAAMAAAAAQAAADE/v//GAAAABAAAAAIAAAAARgAAAAAAADE/v//BAAAAGNvbmQAAAAA7P7//yAAAAAQAAAACAAAAAECAAAAAAAAMP///0AAAAABAAAADQAAAHZpYWJpbGl0eV9wY3QAAAAk////GAAAABAAAAAIAAAAARgAAAAAAAAk////DQAAAGNvbmNlbnRyYXRpb24AAABU////GAAAABAAAAAIAAAAARgAAAAAAABU////CQAAAGNvbmRpdGlvbgAAAID///8gAAAAEAAAAAgAAAABAgAAAAAAAMT///9AAAAAAQAAAAQAAAByYW5rAAAAALD///8oAAAAEAAAAAgAAAABAgAAAAAAAPT///9AAAAAAQAAAAgACQAEAAgACwAAAHRpbWVwb2ludF9oAOz///8sAAAAIAAAABgAAAABGAAAEAASAAQAEAARAAgAAAAMAAAAAAD8////BAAEAAkAAABjZWxsX2xpbmUAAAAAAAAA/////9ABAAAEAAAA7P///4AQAAAAAAAAFAAAAAQAAwAMABMAEAASAAwABADm////MAAAAAAAAAAsAQAAQAAAABQAAAAAAA4AGAAEAAwAEAAAABQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAIABAAAAAAAAgAQAAAAAAAAAAAAAAAAAAIAEAAAAAAAAgAEAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAwAAAAAAAAAJAAAAAAAAAAAAAAAAAAAACQAAAAAAAAADAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAgAEAAAAAAACADQAAAAAAAAAAAAAAAAAAgA0AAAAAAAAAAwAAAAAAAAAAAAAHAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAADAAAAAAAAAA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&quot;,&quot;format&quot;:{&quot;type&quot;:&quot;arrow&quot;}},&quot;mark&quot;:{&quot;type&quot;:&quot;circle&quot;,&quot;opacity&quot;:0.85,&quot;size&quot;:70},&quot;encoding&quot;:{&quot;color&quot;:{&quot;field&quot;:&quot;cond&quot;,&quot;title&quot;:null,&quot;type&quot;:&quot;nominal&quot;},&quot;tooltip&quot;:[{&quot;field&quot;:&quot;condition&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;cell_line&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;timepoint_h&quot;,&quot;type&quot;:&quot;quantitative&quot;},{&quot;field&quot;:&quot;viability_pct&quot;,&quot;type&quot;:&quot;quantitative&quot;}],&quot;x&quot;:{&quot;field&quot;:&quot;viability_pct&quot;,&quot;scale&quot;:{&quot;domain&quot;:[0,105]},&quot;title&quot;:&quot;predicted % viability&quot;,&quot;type&quot;:&quot;quantitative&quot;},&quot;y&quot;:{&quot;field&quot;:&quot;condition&quot;,&quot;sort&quot;:{&quot;field&quot;:&quot;viability_pct&quot;,&quot;op&quot;:&quot;min&quot;},&quot;title&quot;:null,&quot;type&quot;:&quot;nominal&quot;}},&quot;height&quot;:420,&quot;title&quot;:&quot;Lower = more effect. MAPK drugs bite A375, spare LOXIMVI.&quot;,&quot;width&quot;:560,&quot;&#36;schema&quot;:&quot;https://vega.github.io/schema/vega-lite/v5.20.1.json&quot;}' data-chart-selection='true' data-field-selection='true' data-embed-options='{}'></marimo-vega></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "aaf17f7d7de9e705e0a63a5140be779f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Hstk-0' random-id='caa9a9cb-b930-c9c9-eb81-d53699421f42'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;task&#92;&quot;:&#92;&quot;1.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;task&#92;&quot;:&#92;&quot;1.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;task&#92;&quot;:&#92;&quot;1.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;task&#92;&quot;:&#92;&quot;1.4&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;task&#92;&quot;:&#92;&quot;1.5&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;task&#92;&quot;:&#92;&quot;2.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;task&#92;&quot;:&#92;&quot;2.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;task&#92;&quot;:&#92;&quot;2.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;task&#92;&quot;:&#92;&quot;3.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;task&#92;&quot;:&#92;&quot;3.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;task&#92;&quot;:&#92;&quot;4.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;}]&quot;' data-total-rows='11' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;task&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "e9a46743be0d98285d12d7b1ffd9b95b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"what-is-evidence-what-is-assumption\">What is evidence, what is assumption</h2>\n<ul>\n<li><strong>Independent evidence (DepMap, live above):</strong> A375 BRAF/MAP2K1 dependency; PRISM/GDSC AUCs;\n  the GDSC2 dabrafenib A375-vs-LOXIMVI contrast. These could have contradicted the prior and did not.</li>\n<li><strong>Assumptions (mine):</strong> the per-line floors (judgment), the three kinetic curves, the synergy\n  constants. \"BRAF+MEK doublets win in A375\" is the <code>0.72 vs 0.95</code> synergy input read back out.</li>\n</ul>\n<span class=\"paragraph\"><strong>Calibration.</strong> High confidence in the <em>direction</em> of the big contrasts (MAPK inhibitors hit\nA375 far harder than LOXIMVI; panobinostat tops both; clinical doublets are the best A375 combos).\nLow confidence in absolute magnitudes and the fine ordering within the clustered 24 h MAPK\ninhibitors. <strong>Falsifier:</strong> a real 24 h A375 readout where a BRAF/MEK inhibitor drops viability\nbelow panobinostat would break the kinetics premise.</span>\n<h2 id=\"to-extend\">To extend</h2>\n<ul>\n<li>Read the effect floors straight from dose-level viability data instead of judgment.</li>\n<li>Calibrate the drug concentration-response with measured potency (e.g. ChEMBL IC50s).</li>\n<li>Calibrate the kinetic curves against any one real CTG time-course.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "bf5a736ebfbff5e8bfeda1f8e0ee05c2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><hr />\n<h2 id=\"vendored-engine-appendix\">Vendored engine (appendix)</h2>\n<span class=\"paragraph\">Below is the shared, notebook-agnostic machinery this submission reuses: the\nBreadbox HTTP helpers, the drug panel, the CTG-kinetics + Bliss/synergy model,\nand the task-runner. It is vendored inline (rather than imported) so this file\nruns as a single standalone gist. The science specific to this submission is all\nabove; this section is boilerplate you can collapse.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "7fa2977524d0e7c6878359a438b90acc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "738a63459950f933ddca745d5a93ddf9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "359d76a1fc712333e91145504a74848a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "090eea4ae547879b5f31a1c9f487b324",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "ee6c45eba0d7eeee375a36fc5df9b304",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "69775135f8dde1a74f300efa95c61ccc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "55abad23e4dfd8691f168c744b8007e0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "2eedfd3c3d4a336fc3b85dbc9ae01153",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
           }
         }
       ],
@@ -319,12 +319,12 @@
     },
     {
       "id": "Pvdt",
-      "code_hash": "071048798493b71a33febcd7e67bbcf3",
+      "code_hash": "3c48ffe7d8e6790ebc16ba5b7e0bdfc5",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Read-out (live).</strong> GDSC2 dabrafenib: A375 <code>0.35</code> (sensitive) vs LOXIMVI <code>0.76</code> (resistant) - the clean addiction contrast. PRISM panobinostat: A375 <code>0.46</code> / LOXIMVI <code>0.29</code> - the single most potent agent in both lines, a broadly cytotoxic HDAC inhibitor, not a MAPK drug. These live numbers anchor the v1 floors.</span></span>"
+            "text/plain": ""
           }
         }
       ],
@@ -332,12 +332,12 @@
     },
     {
       "id": "ZBYS",
-      "code_hash": "9082ef8407cc49d4a10fc99202310831",
+      "code_hash": "da565b1af387762a2ab258280f8872ae",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"v1-effect-floors-judgment-data-anchored\">v1 effect floors (judgment, data-anchored)</h2>\n<span class=\"paragraph\">The floors below are my curated estimates from the Instrument-2 AUCs + dose-vs-IC50\nmargin + pathway dependence. BRAF inhibitors: deep in A375, shallow in LOXIMVI.\nPI3K/AKT: weak everywhere. Panobinostat: deep in both (cytotoxic). <strong>v2 replaces\nthis whole table with floors read from data.</strong></span></span>"
+            "text/plain": ""
           }
         }
       ],
@@ -345,12 +345,12 @@
     },
     {
       "id": "aLJB",
-      "code_hash": "a9cc5cf12decc9375ef17835e0fb840e",
+      "code_hash": "b5a48d93f0976ebd4871d21e94c4f572",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='aLJB-0' random-id='0bebd175-ef11-420e-bb69-534cd0c1e85e'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;BRAF-V600E&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:45,&#92;&quot;floor_LOXIMVI&#92;&quot;:92,&#92;&quot;conc&#92;&quot;:&#92;&quot;1 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;BRAF-V600E&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:28,&#92;&quot;floor_LOXIMVI&#92;&quot;:82,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;BRAF-V600E&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:33,&#92;&quot;floor_LOXIMVI&#92;&quot;:82,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:30,&#92;&quot;floor_LOXIMVI&#92;&quot;:60,&#92;&quot;conc&#92;&quot;:&#92;&quot;10 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:32,&#92;&quot;floor_LOXIMVI&#92;&quot;:62,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:38,&#92;&quot;floor_LOXIMVI&#92;&quot;:62,&#92;&quot;conc&#92;&quot;:&#92;&quot;100 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;MEK1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:36,&#92;&quot;floor_LOXIMVI&#92;&quot;:62,&#92;&quot;conc&#92;&quot;:&#92;&quot;30 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;multikinase/VEGFR&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;mixed&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:55,&#92;&quot;floor_LOXIMVI&#92;&quot;:58,&#92;&quot;conc&#92;&quot;:&#92;&quot;5 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;PI3K-alpha&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:80,&#92;&quot;floor_LOXIMVI&#92;&quot;:78,&#92;&quot;conc&#92;&quot;:&#92;&quot;5 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;pan-AKT&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytostatic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:78,&#92;&quot;floor_LOXIMVI&#92;&quot;:72,&#92;&quot;conc&#92;&quot;:&#92;&quot;5 uM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;drug&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;mTORC1/2&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;mixed&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:50,&#92;&quot;floor_LOXIMVI&#92;&quot;:52,&#92;&quot;conc&#92;&quot;:&#92;&quot;500 nM&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;target&#92;&quot;:&#92;&quot;pan-HDAC&#92;&quot;,&#92;&quot;class&#92;&quot;:&#92;&quot;cytotoxic&#92;&quot;,&#92;&quot;floor_A375&#92;&quot;:30,&#92;&quot;floor_LOXIMVI&#92;&quot;:25,&#92;&quot;conc&#92;&quot;:&#92;&quot;50 nM&#92;&quot;}]&quot;' data-total-rows='12' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;target&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;class&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;floor_A375&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;floor_LOXIMVI&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;conc&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -358,12 +358,12 @@
     },
     {
       "id": "nHfw",
-      "code_hash": "302ad8ddbde971c76f9409e3e87c9b90",
+      "code_hash": "f68789315fa3e3e79e9b6249b8345260",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='nHfw-0' random-id='b9ff50bf-40a7-bad8-78d5-3da6e417a55c'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;50 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:54},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;500 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;10 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:79},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:5,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:80},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:6,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:80},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:7,&#92;&quot;condition&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:80},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:8,&#92;&quot;condition&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;30 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:81},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:9,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:81},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:10,&#92;&quot;condition&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;1 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:84},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:11,&#92;&quot;condition&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:93},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:12,&#92;&quot;condition&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;5 uM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:94},{&#92;&quot;_marimo_row_id&#92;&quot;:12,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;50 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:38},{&#92;&quot;_marimo_row_id&#92;&quot;:13,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:57},{&#92;&quot;_marimo_row_id&#92;&quot;:14,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;10 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:58},{&#92;&quot;_marimo_row_id&#92;&quot;:15,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;concentration&#92;&quot;:&#92;&quot;100 nM&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:59}]&quot;' data-total-rows='48' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='16' data-field-types='[[&quot;cell_line&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;timepoint_h&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;rank&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;condition&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;concentration&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;viability_pct&quot;,[&quot;integer&quot;,&quot;i64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -371,12 +371,12 @@
     },
     {
       "id": "xXTn",
-      "code_hash": "e58636ab24a0fc0b106420f9e6744ac3",
+      "code_hash": "74d1fdc2c6dd9ecf7c7028b168082b2b",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='xXTn-0' random-id='3350cf2e-4013-c873-7001-bf205e2d3088'><marimo-vega data-initial-value='{}' data-label='null' data-spec='{&quot;config&quot;:{&quot;view&quot;:{&quot;continuousWidth&quot;:300,&quot;continuousHeight&quot;:300}},&quot;data&quot;:{&quot;url&quot;:&quot;data:application/vnd.apache.arrow.file;base64,QVJST1cxAAD/////uAEAAAQAAADy////FAAAAAQAAQAAAAoACwAIAAoABAD4////DAAAAAgACAAAAAQABwAAAEQBAAAEAQAA0AAAAKAAAABsAAAAMAAAAAQAAADE/v//GAAAABAAAAAIAAAAARgAAAAAAADE/v//BAAAAGNvbmQAAAAA7P7//yAAAAAQAAAACAAAAAECAAAAAAAAMP///0AAAAABAAAADQAAAHZpYWJpbGl0eV9wY3QAAAAk////GAAAABAAAAAIAAAAARgAAAAAAAAk////DQAAAGNvbmNlbnRyYXRpb24AAABU////GAAAABAAAAAIAAAAARgAAAAAAABU////CQAAAGNvbmRpdGlvbgAAAID///8gAAAAEAAAAAgAAAABAgAAAAAAAMT///9AAAAAAQAAAAQAAAByYW5rAAAAALD///8oAAAAEAAAAAgAAAABAgAAAAAAAPT///9AAAAAAQAAAAgACQAEAAgACwAAAHRpbWVwb2ludF9oAOz///8sAAAAIAAAABgAAAABGAAAEAASAAQAEAARAAgAAAAMAAAAAAD8////BAAEAAkAAABjZWxsX2xpbmUAAAAAAAAA/////9ABAAAEAAAA7P///4AQAAAAAAAAFAAAAAQAAwAMABMAEAASAAwABADm////MAAAAAAAAAAsAQAAQAAAABQAAAAAAA4AGAAEAAwAEAAAABQABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAIABAAAAAAAAgAQAAAAAAAAAAAAAAAAAAIAEAAAAAAAAgAEAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAwAAAAAAAAAJAAAAAAAAAAAAAAAAAAAACQAAAAAAAAADAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAgAEAAAAAAACADQAAAAAAAAAAAAAAAAAAgA0AAAAAAAAAAwAAAAAAAAAAAAAHAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAQAAABBMzc1AAAAAAAAAAAEAAAAQTM3NQAAAAAAAAAABAAAAEEzNzUAAAAAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAAAcAAABMT1hJTVZJAAAAAAAHAAAATE9YSU1WSQAAAAAABwAAAExPWElNVkkAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAABgAAAAAAAAAGAAAAAAAAAAYAAAAAAAAADAAAAAAAAAA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&quot;,&quot;format&quot;:{&quot;type&quot;:&quot;arrow&quot;}},&quot;mark&quot;:{&quot;type&quot;:&quot;circle&quot;,&quot;opacity&quot;:0.85,&quot;size&quot;:70},&quot;encoding&quot;:{&quot;color&quot;:{&quot;field&quot;:&quot;cond&quot;,&quot;title&quot;:null,&quot;type&quot;:&quot;nominal&quot;},&quot;tooltip&quot;:[{&quot;field&quot;:&quot;condition&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;cell_line&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;timepoint_h&quot;,&quot;type&quot;:&quot;quantitative&quot;},{&quot;field&quot;:&quot;viability_pct&quot;,&quot;type&quot;:&quot;quantitative&quot;}],&quot;x&quot;:{&quot;field&quot;:&quot;viability_pct&quot;,&quot;scale&quot;:{&quot;domain&quot;:[0,105]},&quot;title&quot;:&quot;predicted % viability&quot;,&quot;type&quot;:&quot;quantitative&quot;},&quot;y&quot;:{&quot;field&quot;:&quot;condition&quot;,&quot;sort&quot;:{&quot;field&quot;:&quot;viability_pct&quot;,&quot;op&quot;:&quot;min&quot;},&quot;title&quot;:null,&quot;type&quot;:&quot;nominal&quot;}},&quot;height&quot;:420,&quot;title&quot;:&quot;Lower = more effect. MAPK drugs bite A375, spare LOXIMVI.&quot;,&quot;width&quot;:560,&quot;&#36;schema&quot;:&quot;https://vega.github.io/schema/vega-lite/v5.20.1.json&quot;}' data-chart-selection='true' data-field-selection='true' data-embed-options='{}'></marimo-vega></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -384,12 +384,12 @@
     },
     {
       "id": "AjVT",
-      "code_hash": "aaf17f7d7de9e705e0a63a5140be779f",
+      "code_hash": "2a4c1b24422c8c99df12d16419d641c3",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='AjVT-0' random-id='d904acec-174e-d351-4467-ec52b58fa799'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;task&#92;&quot;:&#92;&quot;1.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;task&#92;&quot;:&#92;&quot;1.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;task&#92;&quot;:&#92;&quot;1.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;task&#92;&quot;:&#92;&quot;1.4&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;task&#92;&quot;:&#92;&quot;1.5&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;task&#92;&quot;:&#92;&quot;2.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;task&#92;&quot;:&#92;&quot;2.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;task&#92;&quot;:&#92;&quot;2.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;task&#92;&quot;:&#92;&quot;3.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;task&#92;&quot;:&#92;&quot;3.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;task&#92;&quot;:&#92;&quot;4.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;}]&quot;' data-total-rows='11' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;task&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -397,12 +397,25 @@
     },
     {
       "id": "pHFh",
-      "code_hash": "65e621d9129b7b02dd489c4a7a664305",
+      "code_hash": "1bad5f5e613f7a6859c14475c0f7a888",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"what-is-evidence-what-is-assumption-v1\">What is evidence, what is assumption (v1)</h2>\n<ul>\n<li><strong>Independent evidence (DepMap, live above):</strong> A375 BRAF/MAP2K1 dependency; PRISM/GDSC AUCs;\n  the GDSC2 dabrafenib A375-vs-LOXIMVI contrast. These could have contradicted the prior and did not.</li>\n<li><strong>Assumptions (mine):</strong> the per-line floors (judgment), the three kinetic curves, the synergy\n  constants. \"BRAF+MEK doublets win in A375\" is the <code>0.72 vs 0.95</code> synergy input read back out.</li>\n</ul>\n<span class=\"paragraph\"><strong>Calibration.</strong> High confidence in the <em>direction</em> of the big contrasts (MAPK inhibitors hit\nA375 far harder than LOXIMVI; panobinostat tops both; clinical doublets are the best A375 combos).\nLow confidence in absolute magnitudes and the fine ordering within the clustered 24 h MAPK\ninhibitors. <strong>Falsifier:</strong> a real 24 h A375 readout where a BRAF/MEK inhibitor drops viability\nbelow panobinostat would break the kinetics premise. v2 and v3 attack the weakest assumptions\n(the floors, then the dose-response) with data.</span>\n<h2 id=\"to-extend\">To extend</h2>\n<ul>\n<li>v2 swaps judgment floors for PRISM/GDSC dose-level viability.</li>\n<li>v3 calibrates the concentration-response with ChEMBL potency.</li>\n<li>Calibrate the kinetic curves against any one real CTG time-course.</li>\n</ul></span>"
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "NCOB",
+      "code_hash": "bed5a2332d1775befadc7eee8f6ec982",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
           }
         }
       ],

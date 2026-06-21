@@ -28,7 +28,7 @@ with app.setup:
     import polars as pl
     import requests
 
-    # Self-contained standalone notebook: vendors the v1 engine + Breadbox HTTP helpers
+    # Self-contained standalone notebook: vendors the engine + Breadbox HTTP helpers
     # below, so it runs as a single gist with no sibling files.
     NOTEBOOK_DIR = Path(__file__).resolve().parent
     REPO_DIR = NOTEBOOK_DIR.parent if NOTEBOOK_DIR.name == "notebooks" else NOTEBOOK_DIR
@@ -50,7 +50,7 @@ with app.setup:
         "Alpelisib",
         "Capivasertib",
     ]
-    # v1 judgment floors (asymptotic % viability at task dose), reused only where the
+    # judgment-baseline floors (asymptotic % viability at task dose), used only where the
     # data source has no value for a drug. Kept inline so this notebook is standalone.
     FLOORS_V1 = {
         "Vemurafenib": (45, 92),
@@ -86,6 +86,292 @@ with app.setup:
     }
 
 
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # Night Shift submission - ChEMBL dose calibration
+
+    Predict CellTiter-Glo % viability for A375 and LOXIMVI under a MAPK-inhibitor panel,
+    and rank conditions by effect. No experimental readout is provided, so these are
+    predictions.
+
+    The effect floors here start from a real screen (PRISM Secondary dose-level viability),
+    but read at the *nearest grid dose* PRISM happens to have - and PRISM's grid is coarse
+    (4-fold steps), so the measured dose can sit ~1.5x off the actual task dose. The design
+    choice in this submission: correct that with **measured potency**. For each drug it
+    pulls the per-compound median IC50 from **ChEMBL 37** (local SQLite copy, with a REST-API
+    fallback) and builds a Hill curve (`effect = dose/(dose+IC50)`); it then slides the
+    PRISM-measured viability from the grid dose to the *exact* task dose along that curve,
+    and derives the Task-3 1/3-dose retention from the same curve instead of guessing it.
+    The kinetics + combination engine is vendored unchanged in the appendix.
+
+    The correction is small where the task dose already saturates the target (dabrafenib,
+    encorafenib: dose >> IC50) and largest where it does not - **trametinib's 10 nM sits
+    right at its 10 nM IC50, and binimetinib's 100 nM is below its 182 nM IC50** - so those
+    are the drugs whose floors and 1/3-dose behavior change most. This is one of a small set
+    of submissions that differ only in how the floors are produced; see the repo README.
+    """)
+    return
+
+
+@app.function
+def ic50_from_db(con, name: str) -> float | None:
+    """Per-compound median IC50 (nM) from a local ChEMBL SQLite connection, or None."""
+    up = name.upper()
+    rows = con.execute("SELECT molregno FROM molecule_dictionary WHERE pref_name=?", (up,)).fetchall()
+    if not rows:
+        rows = con.execute(
+            "SELECT DISTINCT ms.molregno FROM molecule_synonyms ms WHERE UPPER(ms.synonyms)=?", (up,)
+        ).fetchall()
+    if not rows:
+        return None
+    pch = sorted(
+        v[0]
+        for v in con.execute(
+            "SELECT pchembl_value FROM activities WHERE molregno=? AND standard_type='IC50' "
+            "AND standard_units='nM' AND standard_relation='=' AND pchembl_value IS NOT NULL "
+            "AND data_validity_comment IS NULL",
+            (rows[0][0],),
+        ).fetchall()
+        if v[0] is not None
+    )
+    return round(10 ** (9 - pch[len(pch) // 2]), 1) if pch else None
+
+
+@app.function
+def ic50_from_api(name: str) -> float | None:
+    """Per-compound median IC50 (nM) from the ChEMBL REST API, or None on any failure.
+
+    Same quality grain as the DB path (median pchembl over IC50 activities); used when the
+    local ~30 GB DB is absent (e.g. on molab). The public API is flaky, hence the guards.
+    """
+    h = {"Accept": "application/json"}
+    try:
+        r = requests.get(
+            f"{CHEMBL_API}/molecule.json", params={"pref_name__iexact": name, "limit": 1}, headers=h, timeout=30
+        )
+        mols = r.json().get("molecules", []) if r.ok else []
+        if not mols:
+            r = requests.get(
+                f"{CHEMBL_API}/molecule/search.json", params={"q": name, "limit": 1}, headers=h, timeout=30
+            )
+            mols = r.json().get("molecules", []) if r.ok else []
+        if not mols:
+            return None
+        cid = mols[0]["molecule_chembl_id"]
+        r = requests.get(
+            f"{CHEMBL_API}/activity.json",
+            params={
+                "molecule_chembl_id": cid,
+                "standard_type": "IC50",
+                "standard_units": "nM",
+                "pchembl_value__isnull": "false",
+                "limit": 1000,
+            },
+            headers=h,
+            timeout=60,
+        )
+        pch = sorted(float(a["pchembl_value"]) for a in r.json().get("activities", []) if a.get("pchembl_value"))
+        return round(10 ** (9 - pch[len(pch) // 2]), 1) if pch else None
+    except (requests.RequestException, ValueError, KeyError, IndexError):
+        return None
+
+
+@app.function
+def chembl_ic50_nM() -> dict:
+    """Per-compound median IC50 (nM) for the panel. Three tiers, in order of trust:
+
+    local ChEMBL 37 SQLite copy -> ChEMBL REST API (when the DB is absent) -> frozen values
+    (only if both are unreachable). Same quality guards throughout (nM, relation '=',
+    pchembl not null). Note: the median pools IC50s across assay types (enzyme / cell /
+    off-target), so it is a coarse cross-assay potency proxy, not a target-specific IC50.
+    """
+    con = sqlite3.connect(f"file:{CHEMBL_DB}?mode=ro", uri=True) if Path(CHEMBL_DB).exists() else None
+    out = {}
+    for name in drug_panel():
+        val = None
+        if con is not None:
+            try:
+                val = ic50_from_db(con, name)
+            except sqlite3.Error:
+                val = None
+        if val is None:
+            val = ic50_from_api(name)  # DB absent or drug missing -> REST API
+        out[name] = val if val is not None else CHEMBL_IC50_FROZEN[name]
+    if con is not None:
+        con.close()
+    return out
+
+
+@app.function
+def hill(dose_nM: float, ic50_nM: float) -> float:
+    """Fraction of maximal target effect at a dose (Hill coefficient 1)."""
+    return dose_nM / (dose_nM + ic50_nM)
+
+
+@app.cell
+def _():
+    prism = prism_dose_floors()
+    ic50 = chembl_ic50_nM()
+    panel = drug_panel()
+
+    def floor_v3(name, line):
+        # the PRISM grid-dose floor, slid to the exact task dose via the Hill curve.
+        base = (
+            prism[name]["floorA" if line == "A375" else "floorL"]
+            if name in prism
+            else FLOORS_V1[name][0 if line == "A375" else 1]
+        )
+        task_nM = panel[name]["conc_nM"]
+        meas_nM = prism[name]["dose_uM"] * 1000.0 if name in prism else task_nM
+        ratio = hill(task_nM, ic50[name]) / hill(meas_nM, ic50[name])
+        return round(max(2.0, 100.0 - (100.0 - base) * ratio), 1)  # keep >100 (growth) signal, floor at 2
+
+    def retain3_v3(name):
+        # fraction of effect retained going from task dose to 1/3 dose, from the Hill curve
+        d = panel[name]["conc_nM"]
+        return round(hill(d / 3.0, ic50[name]) / hill(d, ic50[name]), 2)
+
+    drugs_v3 = {
+        n: {**meta, "floorA": floor_v3(n, "A375"), "floorL": floor_v3(n, "LOXIMVI"), "retain3": retain3_v3(n)}
+        for n, meta in panel.items()
+    }
+
+    compare = pl.DataFrame(
+        [
+            {
+                "drug": n,
+                "IC50_nM": ic50[n],
+                "task_nM": panel[n]["conc_nM"],
+                "dose/IC50": round(panel[n]["conc_nM"] / ic50[n], 1),
+                "floor_A_corrected": floor_v3(n, "A375"),
+                "floor_A_griddose": prism.get(n, {}).get("floorA", FLOORS_V1[n][0]),
+                "retain3_corrected": retain3_v3(n),
+                "retain3_handset": meta["retain3"],
+            }
+            for n, meta in panel.items()
+        ]
+    )
+    mo.md("### ChEMBL-calibrated floors & 1/3-dose retention vs the grid-dose read")
+    mo.ui.table(compare, page_size=12)
+    return drugs_v3, floor_v3, ic50
+
+
+@app.cell
+def _(ic50):
+    # Which task doses actually saturate their target? (dose/IC50 < ~3 => sub-saturating)
+    _panel = drug_panel()
+    sat = pl.DataFrame([{"drug": n, "dose_over_IC50": round(_panel[n]["conc_nM"] / ic50[n], 2)} for n in _panel]).sort(
+        "dose_over_IC50"
+    )
+    _chart = (
+        alt.Chart(sat)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "dose_over_IC50:Q", scale=alt.Scale(type="log"), title="task dose / ChEMBL IC50 (log; <1 = below IC50)"
+            ),
+            y=alt.Y("drug:N", sort="x", title=None),
+            color=alt.condition(alt.datum.dose_over_IC50 < 3, alt.value("#d62728"), alt.value("#1f77b4")),
+            tooltip=["drug", "dose_over_IC50"],
+        )
+        .properties(width=560, height=420, title="Red = task dose is sub-saturating; v3 revises these most")
+    )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.function
+def methods_note_v3() -> str:
+    """v3 methods preamble embedded in each reasoning.md."""
+    return (
+        "## Method (ChEMBL dose calibration)\n\n"
+        "Predictions, not measurements. A fixed CTG-kinetics + combination engine on "
+        "PRISM-measured effect floors, but each floor is slid from the PRISM grid dose to the "
+        "exact task dose along a Hill curve `effect = dose/(dose+IC50)`, with IC50 the "
+        "per-compound median from ChEMBL 37 (local copy, REST-API fallback). The Task-3 "
+        "1/3-dose retention is taken from the same curve instead of a hand-set constant. The "
+        "correction is largest for drugs whose task dose is near or below their IC50 "
+        "(trametinib 10 nM = IC50; binimetinib 100 nM < 182 nM IC50).\n\n"
+    )
+
+
+@app.cell
+def _(drugs_v3, floor_v3, ic50):
+    n_live = "local ChEMBL 37 DB" if Path(CHEMBL_DB).exists() else "ChEMBL REST API (DB absent)"
+    status = run_submission(
+        drugs_v3,
+        floor_v3,
+        OUT_DIR,
+        methods_note_v3(),
+        "Night Shift melanoma drug-response predictions (ChEMBL-calibrated): PRISM-measured floors "
+        "slid to the exact task dose along a ChEMBL-IC50 Hill curve, with Task-3 1/3-dose retention "
+        "from the same curve. Predictions, not measurements.",
+        {"ic50_source": n_live, "trametinib_IC50_nM": ic50["Trametinib"], "binimetinib_IC50_nM": ic50["Binimetinib"]},
+    )
+    mo.md("### v3 submission complete - 11 tasks + summary.json under data/processed/nightshift_v3/")
+    mo.ui.table(status, page_size=12)
+    return
+
+
+@app.cell
+def _(drugs_v3, floor_v3):
+    preview = pl.DataFrame(
+        [
+            {"cell_line": line, "timepoint_h": t, **r}
+            for line in ("A375", "LOXIMVI")
+            for t in (24, 48)
+            for r in rank_single_agents(line, t, drugs_v3, floor_v3)
+        ]
+    ).select("cell_line", "timepoint_h", "rank", "condition", "viability_pct")
+    mo.md("### v3 single-agent predictions")
+    mo.ui.table(preview.sort("cell_line", "timepoint_h", "rank"), page_size=16)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## What v3 changes, and the honest limit
+
+    This correction is principled but bounded: because the PRISM read already picks the
+    *nearest* grid dose, the slide to the exact task dose is small for most drugs and only
+    material for the sub-saturating ones (trametinib, binimetinib, and the 1/3-dose Task-3
+    nominations). Two limits it does **not** fix. First, a median IC50 pooled across
+    enzyme/cell/off-target assays is a coarse potency proxy, and a short-exposure IC50 is not
+    the multi-day CTG kill, so the Hill slide is a dose-interpolation, not a re-derivation of
+    the effect. Second, and more important: **this submission shares its kinetics + Bliss/
+    synergy engine with the others in this set** (see the repo README) - they differ only in
+    the floor input, so they cannot bracket the engine's own assumptions, only the floor's.
+    The real 16-48 h CTG readout is the only thing that tests the engine; until then, treat
+    these as one model under several floor choices, not as a calibrated spread.
+
+    ## To extend
+
+    - Calibrate the kinetic curves themselves against a real CTG time-course - the last
+      hand-set piece, and the one every submission in this set shares.
+    - Use cell-line-specific (melanoma) ChEMBL GI50s instead of the pooled per-compound IC50.
+    - Swap the Bliss/synergy engine for an independent method and compare, to actually test
+      (not just re-floor) the load-bearing combination assumptions.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Vendored engine (appendix)
+
+    Below is the shared, notebook-agnostic machinery this submission reuses: the
+    Breadbox HTTP helpers, the drug panel, the CTG-kinetics + Bliss/synergy model,
+    and the task-runner. It is vendored inline (rather than imported) so this file
+    runs as a single standalone gist. The science specific to this submission is all
+    above; this section is boilerplate you can collapse.
+    """)
+    return
+
+
 @app.function
 def bb_request(method: str, endpoint: str, *, params: dict | None = None, json_body: dict | None = None) -> object:
     """Vendored Breadbox call: identifying User-Agent (portal 403s the default) + 5xx retry."""
@@ -117,7 +403,7 @@ def bb_post(endpoint: str, body: dict) -> object:
 
 @app.function
 def drug_panel() -> dict:
-    """Per-drug mechanism metadata shared across all three submissions (no floors).
+    """Per-drug mechanism metadata: the assay-fixed part of the panel (no floors).
 
     Floors are what each submission produces differently; everything else - target,
     kinetic class, fraction of effect retained at 1/3 dose, task concentration - is
@@ -313,17 +599,17 @@ def task4_response() -> str:
 
 @app.function
 def task4_analyses() -> str:
-    """Task 4.1 'analyses' field - cites independent DepMap data, not the prediction model."""
+    """Task 4.1 'analyses' field - cites published DepMap facts, not the prediction model."""
     return (
-        "Support here is the *independent* DepMap data this notebook pulls live (not "
-        "the prediction model, which would be circular): A375 carries a strong CRISPR "
-        "BRAF dependency (~ -1.5) and GDSC2 dabrafenib AUC ~0.35, while LOXIMVI shows "
-        "GDSC2 dabrafenib ~0.76 - the BRAF-V600E addiction that intermittent dosing is "
-        "designed to exploit, measured rather than assumed. DepMap also lists "
-        "BRAFi-resistant A375 sublines (A375DABR, A375DABTRAMR) as ready-made models "
-        "for the proposed resistance experiments. The Task-1/2/3 viability numbers are "
-        "model predictions, so they illustrate the strategy's logic but are not "
-        "evidence for it."
+        "Supporting facts that are independent of the prediction model - reported by "
+        "DepMap, not produced by the model, so citing them is not circular: A375 carries "
+        "a strong CRISPR BRAF dependency (~ -1.5) and a GDSC2 dabrafenib AUC ~0.35, while "
+        "LOXIMVI's GDSC2 dabrafenib AUC is ~0.76 - the BRAF-V600E addiction that "
+        "intermittent dosing is designed to exploit, measured rather than assumed. DepMap "
+        "also lists BRAFi-resistant A375 sublines (A375DABR, A375DABTRAMR) as ready-made "
+        "models for the proposed resistance experiments. The Task-1/2/3 viability numbers, "
+        "by contrast, are model predictions - they illustrate the strategy's logic but are "
+        "not evidence for it."
     )
 
 
@@ -331,7 +617,7 @@ def task4_analyses() -> str:
 def run_submission(
     drugs: dict, floor_fn, out_dir: Path, methods_note: str, summary_desc: str, summary_numbers: dict
 ) -> pl.DataFrame:
-    """Write all 11 task outputs (+ summary.json) for one set of floors. Shared by v1/v2/v3."""
+    """Write all 11 task outputs (+ summary.json) for one set of floors."""
 
     def drugs_of(condition):
         return [c.strip() for c in condition.split("+")]
@@ -513,8 +799,8 @@ def prism_dose_floors() -> dict:
 
     For each drug, find the two dose points nearest its task concentration (log scale),
     convert log2 fold-change to % viability (100*2^v), and average them. Returns
-    {drug: {floorA, floorL, doses}} for drugs present in PRISM; callers fall back to the
-    v1 judgment floor for the rest. Used by both this notebook and v3.
+    {drug: {floorA, floorL, doses}} for drugs present in PRISM; callers fall back to a
+    judgment-baseline floor for the rest.
     """
     panel = drug_panel()
     feats = bb_get(f"datasets/features/{PRISM_VIAB}")
@@ -563,273 +849,6 @@ def prism_dose_floors() -> dict:
             "doses": " / ".join(f"{d:g}uM" for d in doses),
         }
     return floors
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    # Night Shift submission v3 - ChEMBL dose calibration
-
-    Builds on **v2** (`nightshift_v2_data_floors.py`). v2 read each floor off the PRISM
-    dose-response at the *nearest grid dose* to the task concentration - but PRISM's grid
-    is coarse (4-fold steps), so the measured dose can sit 1.5x off the task dose, and the
-    1/3-dose retention for the Task-3 nominations was still a hand-set constant.
-
-    v3 fixes both with measured potency. For each drug it pulls the per-compound median
-    IC50 from a local **ChEMBL 37** copy and builds a Hill curve (`effect = dose/(dose+IC50)`).
-    Then it **slides v2's measured viability from the PRISM grid dose to the exact task
-    dose** along that curve, and derives the Task-3 1/3-dose retention from the same curve
-    instead of guessing it. Nothing else changes: the kinetics model, the combination
-    engine, and the orchestration are imported from v1; the floors are v2's, dose-corrected.
-
-    The correction is small where the task dose already saturates the target (dabrafenib,
-    encorafenib: dose >> IC50) and largest where it does not - **trametinib's 10 nM sits
-    right at its 10 nM IC50, and binimetinib's 100 nM is below its 182 nM IC50** - so those
-    are the drugs whose floors and 1/3-dose behavior v3 most revises.
-    """)
-    return
-
-
-@app.function
-def ic50_from_db(con, name: str) -> float | None:
-    """Per-compound median IC50 (nM) from a local ChEMBL SQLite connection, or None."""
-    up = name.upper()
-    rows = con.execute("SELECT molregno FROM molecule_dictionary WHERE pref_name=?", (up,)).fetchall()
-    if not rows:
-        rows = con.execute(
-            "SELECT DISTINCT ms.molregno FROM molecule_synonyms ms WHERE UPPER(ms.synonyms)=?", (up,)
-        ).fetchall()
-    if not rows:
-        return None
-    pch = sorted(
-        v[0]
-        for v in con.execute(
-            "SELECT pchembl_value FROM activities WHERE molregno=? AND standard_type='IC50' "
-            "AND standard_units='nM' AND standard_relation='=' AND pchembl_value IS NOT NULL "
-            "AND data_validity_comment IS NULL",
-            (rows[0][0],),
-        ).fetchall()
-        if v[0] is not None
-    )
-    return round(10 ** (9 - pch[len(pch) // 2]), 1) if pch else None
-
-
-@app.function
-def ic50_from_api(name: str) -> float | None:
-    """Per-compound median IC50 (nM) from the ChEMBL REST API, or None on any failure.
-
-    Same quality grain as the DB path (median pchembl over IC50 activities); used when the
-    local ~30 GB DB is absent (e.g. on molab). The public API is flaky, hence the guards.
-    """
-    h = {"Accept": "application/json"}
-    try:
-        r = requests.get(
-            f"{CHEMBL_API}/molecule.json", params={"pref_name__iexact": name, "limit": 1}, headers=h, timeout=30
-        )
-        mols = r.json().get("molecules", []) if r.ok else []
-        if not mols:
-            r = requests.get(
-                f"{CHEMBL_API}/molecule/search.json", params={"q": name, "limit": 1}, headers=h, timeout=30
-            )
-            mols = r.json().get("molecules", []) if r.ok else []
-        if not mols:
-            return None
-        cid = mols[0]["molecule_chembl_id"]
-        r = requests.get(
-            f"{CHEMBL_API}/activity.json",
-            params={
-                "molecule_chembl_id": cid,
-                "standard_type": "IC50",
-                "standard_units": "nM",
-                "pchembl_value__isnull": "false",
-                "limit": 1000,
-            },
-            headers=h,
-            timeout=60,
-        )
-        pch = sorted(float(a["pchembl_value"]) for a in r.json().get("activities", []) if a.get("pchembl_value"))
-        return round(10 ** (9 - pch[len(pch) // 2]), 1) if pch else None
-    except (requests.RequestException, ValueError, KeyError, IndexError):
-        return None
-
-
-@app.function
-def chembl_ic50_nM() -> dict:
-    """Per-compound median IC50 (nM) for the panel. Three tiers, in order of trust:
-
-    local ChEMBL 37 SQLite copy -> ChEMBL REST API (when the DB is absent) -> frozen values
-    (only if both are unreachable). Same quality guards throughout (nM, relation '=',
-    pchembl not null). Note: the median pools IC50s across assay types (enzyme / cell /
-    off-target), so it is a coarse cross-assay potency proxy, not a target-specific IC50.
-    """
-    con = sqlite3.connect(f"file:{CHEMBL_DB}?mode=ro", uri=True) if Path(CHEMBL_DB).exists() else None
-    out = {}
-    for name in drug_panel():
-        val = None
-        if con is not None:
-            try:
-                val = ic50_from_db(con, name)
-            except sqlite3.Error:
-                val = None
-        if val is None:
-            val = ic50_from_api(name)  # DB absent or drug missing -> REST API
-        out[name] = val if val is not None else CHEMBL_IC50_FROZEN[name]
-    if con is not None:
-        con.close()
-    return out
-
-
-@app.function
-def hill(dose_nM: float, ic50_nM: float) -> float:
-    """Fraction of maximal target effect at a dose (Hill coefficient 1)."""
-    return dose_nM / (dose_nM + ic50_nM)
-
-
-@app.cell
-def _():
-    prism = prism_dose_floors()
-    ic50 = chembl_ic50_nM()
-    panel = drug_panel()
-
-    def floor_v3(name, line):
-        # v2's measured floor, slid from the PRISM grid dose to the exact task dose via Hill.
-        base = (
-            prism[name]["floorA" if line == "A375" else "floorL"]
-            if name in prism
-            else FLOORS_V1[name][0 if line == "A375" else 1]
-        )
-        task_nM = panel[name]["conc_nM"]
-        meas_nM = prism[name]["dose_uM"] * 1000.0 if name in prism else task_nM
-        ratio = hill(task_nM, ic50[name]) / hill(meas_nM, ic50[name])
-        return round(max(2.0, 100.0 - (100.0 - base) * ratio), 1)  # keep >100 (growth) signal, floor at 2
-
-    def retain3_v3(name):
-        # fraction of effect retained going from task dose to 1/3 dose, from the Hill curve
-        d = panel[name]["conc_nM"]
-        return round(hill(d / 3.0, ic50[name]) / hill(d, ic50[name]), 3)
-
-    drugs_v3 = {
-        n: {**meta, "floorA": floor_v3(n, "A375"), "floorL": floor_v3(n, "LOXIMVI"), "retain3": retain3_v3(n)}
-        for n, meta in panel.items()
-    }
-
-    compare = pl.DataFrame(
-        [
-            {
-                "drug": n,
-                "IC50_nM": ic50[n],
-                "task_nM": panel[n]["conc_nM"],
-                "dose/IC50": round(panel[n]["conc_nM"] / ic50[n], 1),
-                "floor_A_v3": floor_v3(n, "A375"),
-                "floor_A_v2": prism.get(n, {}).get("floorA", FLOORS_V1[n][0]),
-                "retain3_v3": retain3_v3(n),
-                "retain3_v2": meta["retain3"],
-            }
-            for n, meta in panel.items()
-        ]
-    )
-    mo.md("### v3 ChEMBL-calibrated floors & 1/3-dose retention vs v2")
-    mo.ui.table(compare, page_size=12)
-    return drugs_v3, floor_v3, ic50
-
-
-@app.cell
-def _(ic50):
-    # Which task doses actually saturate their target? (dose/IC50 < ~3 => sub-saturating)
-    _panel = drug_panel()
-    sat = pl.DataFrame([{"drug": n, "dose_over_IC50": round(_panel[n]["conc_nM"] / ic50[n], 2)} for n in _panel]).sort(
-        "dose_over_IC50"
-    )
-    _chart = (
-        alt.Chart(sat)
-        .mark_bar()
-        .encode(
-            x=alt.X(
-                "dose_over_IC50:Q", scale=alt.Scale(type="log"), title="task dose / ChEMBL IC50 (log; <1 = below IC50)"
-            ),
-            y=alt.Y("drug:N", sort="x", title=None),
-            color=alt.condition(alt.datum.dose_over_IC50 < 3, alt.value("#d62728"), alt.value("#1f77b4")),
-            tooltip=["drug", "dose_over_IC50"],
-        )
-        .properties(width=560, height=420, title="Red = task dose is sub-saturating; v3 revises these most")
-    )
-    mo.ui.altair_chart(_chart)
-    return
-
-
-@app.function
-def methods_note_v3() -> str:
-    """v3 methods preamble embedded in each reasoning.md."""
-    return (
-        "## Method (v3 - ChEMBL dose calibration)\n\n"
-        "Predictions, not measurements. Same engine and same PRISM-measured floors as v2, "
-        "but each floor is slid from the PRISM grid dose to the exact task dose along a Hill "
-        "curve `effect = dose/(dose+IC50)`, with IC50 the per-compound median from a local "
-        "ChEMBL 37 copy. The Task-3 1/3-dose retention is taken from the same curve instead "
-        "of a hand-set constant. The correction is largest for drugs whose task dose is near "
-        "or below their IC50 (trametinib 10 nM = IC50; binimetinib 100 nM < 182 nM IC50).\n\n"
-    )
-
-
-@app.cell
-def _(drugs_v3, floor_v3, ic50):
-    n_live = "local ChEMBL 37 DB" if Path(CHEMBL_DB).exists() else "ChEMBL REST API (DB absent)"
-    status = run_submission(
-        drugs_v3,
-        floor_v3,
-        OUT_DIR,
-        methods_note_v3(),
-        "Night Shift melanoma drug-response predictions (v3, ChEMBL-calibrated): v2's PRISM floors "
-        "slid to the exact task dose along a ChEMBL-IC50 Hill curve, with Task-3 1/3-dose retention "
-        "from the same curve. Predictions, not measurements.",
-        {"ic50_source": n_live, "trametinib_IC50_nM": ic50["Trametinib"], "binimetinib_IC50_nM": ic50["Binimetinib"]},
-    )
-    mo.md("### v3 submission complete - 11 tasks + summary.json under data/processed/nightshift_v3/")
-    mo.ui.table(status, page_size=12)
-    return
-
-
-@app.cell
-def _(drugs_v3, floor_v3):
-    preview = pl.DataFrame(
-        [
-            {"cell_line": line, "timepoint_h": t, **r}
-            for line in ("A375", "LOXIMVI")
-            for t in (24, 48)
-            for r in rank_single_agents(line, t, drugs_v3, floor_v3)
-        ]
-    ).select("cell_line", "timepoint_h", "rank", "condition", "viability_pct")
-    mo.md("### v3 single-agent predictions")
-    mo.ui.table(preview.sort("cell_line", "timepoint_h", "rank"), page_size=16)
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## What v3 changes, and the honest limit
-
-    v3's correction is principled but bounded: because v2 already picked the *nearest* grid
-    dose, the slide to the exact task dose is small for most drugs and only material for the
-    sub-saturating ones (trametinib, binimetinib, and the 1/3-dose Task-3 nominations). Two
-    limits it does **not** fix. First, a median IC50 pooled across enzyme/cell/off-target
-    assays is a coarse potency proxy, and a short-exposure IC50 is not the multi-day CTG kill,
-    so the Hill slide is a dose-interpolation, not a re-derivation of the effect. Second, and
-    more important: **all three submissions share one unchanged kinetics + Bliss/synergy
-    engine.** v1->v2->v3 swap only the floor input, so they are *not* three independent
-    estimates - they cannot bracket the engine's own assumptions, only the floor's. The real
-    16-48 h CTG readout is the only thing that tests the engine; until then, treat the three
-    as one model under three floor choices, not as a calibrated spread.
-
-    ## To extend
-
-    - Calibrate the kinetic curves themselves against a real CTG time-course - the last
-      hand-set piece, and the one shared across all three submissions.
-    - Use cell-line-specific (melanoma) ChEMBL GI50s instead of the pooled per-compound IC50.
-    - Swap the Bliss/synergy engine for an independent method and compare, to actually test
-      (not just re-floor) the load-bearing combination assumptions.
-    """)
-    return
 
 
 if __name__ == "__main__":

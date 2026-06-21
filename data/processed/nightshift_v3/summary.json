@@ -1,5 +1,5 @@
 {
-  "description": "Night Shift melanoma drug-response predictions (v3, ChEMBL-calibrated): v2's PRISM floors slid to the exact task dose along a ChEMBL-IC50 Hill curve, with Task-3 1/3-dose retention from the same curve. Predictions, not measurements.",
+  "description": "Night Shift melanoma drug-response predictions (ChEMBL-calibrated): PRISM-measured floors slid to the exact task dose along a ChEMBL-IC50 Hill curve, with Task-3 1/3-dose retention from the same curve. Predictions, not measurements.",
   "numbers": {
     "tasks_submitted": 11,
     "ic50_source": "local ChEMBL 37 DB",

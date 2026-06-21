@@ -7,7 +7,7 @@
   "cells": [
     {
       "id": "setup",
-      "code_hash": "841838c9836e79c34554076d7e2c1b34",
+      "code_hash": "c33fa5560f167cba1bf6b9b8fb913b9c",
       "outputs": [
         {
           "type": "data",
@@ -20,12 +20,12 @@
     },
     {
       "id": "Hbol",
-      "code_hash": "7fa2977524d0e7c6878359a438b90acc",
+      "code_hash": "490a16212f73b7fa8eb41aa878799630",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/plain": ""
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"night-shift-submission-chembl-dose-calibration\">Night Shift submission - ChEMBL dose calibration</h1>\n<span class=\"paragraph\">Predict CellTiter-Glo % viability for A375 and LOXIMVI under a MAPK-inhibitor panel,\nand rank conditions by effect. No experimental readout is provided, so these are\npredictions.</span>\n<span class=\"paragraph\">The effect floors here start from a real screen (PRISM Secondary dose-level viability),\nbut read at the <em>nearest grid dose</em> PRISM happens to have - and PRISM's grid is coarse\n(4-fold steps), so the measured dose can sit ~1.5x off the actual task dose. The design\nchoice in this submission: correct that with <strong>measured potency</strong>. For each drug it\npulls the per-compound median IC50 from <strong>ChEMBL 37</strong> (local SQLite copy, with a REST-API\nfallback) and builds a Hill curve (<code>effect = dose/(dose+IC50)</code>); it then slides the\nPRISM-measured viability from the grid dose to the <em>exact</em> task dose along that curve,\nand derives the Task-3 1/3-dose retention from the same curve instead of guessing it.\nThe kinetics + combination engine is vendored unchanged in the appendix.</span>\n<span class=\"paragraph\">The correction is small where the task dose already saturates the target (dabrafenib,\nencorafenib: dose &gt;&gt; IC50) and largest where it does not - <strong>trametinib's 10 nM sits\nright at its 10 nM IC50, and binimetinib's 100 nM is below its 182 nM IC50</strong> - so those\nare the drugs whose floors and 1/3-dose behavior change most. This is one of a small set\nof submissions that differ only in how the floors are produced; see the repo README.</span></span>"
           }
         }
       ],
@@ -33,214 +33,6 @@
     },
     {
       "id": "MJUe",
-      "code_hash": "738a63459950f933ddca745d5a93ddf9",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "vblA",
-      "code_hash": "359d76a1fc712333e91145504a74848a",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "bkHC",
-      "code_hash": "03be0977f72bc86dfcc0777a29fceb2c",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "lEQa",
-      "code_hash": "69775135f8dde1a74f300efa95c61ccc",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "PKri",
-      "code_hash": "55abad23e4dfd8691f168c744b8007e0",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "Xref",
-      "code_hash": "2eedfd3c3d4a336fc3b85dbc9ae01153",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "SFPL",
-      "code_hash": "3c48ffe7d8e6790ebc16ba5b7e0bdfc5",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "BYtC",
-      "code_hash": "da565b1af387762a2ab258280f8872ae",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "RGSE",
-      "code_hash": "b5a48d93f0976ebd4871d21e94c4f572",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "Kclp",
-      "code_hash": "f68789315fa3e3e79e9b6249b8345260",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "emfo",
-      "code_hash": "74d1fdc2c6dd9ecf7c7028b168082b2b",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "Hstk",
-      "code_hash": "2a4c1b24422c8c99df12d16419d641c3",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "nWHF",
-      "code_hash": "bf7343c9197407dd88994acfa21a4810",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "iLit",
-      "code_hash": "8dd2b36e15bba6094613d6d4befe3dfa",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "ZHCJ",
-      "code_hash": "dc7d2115381bce3bc7805be75a25f3d8",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/plain": ""
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "ROlb",
-      "code_hash": "b7f41af570482ef53887374ce2562b17",
-      "outputs": [
-        {
-          "type": "data",
-          "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"night-shift-submission-v3-chembl-dose-calibration\">Night Shift submission v3 - ChEMBL dose calibration</h1>\n<span class=\"paragraph\">Builds on <strong>v2</strong> (<code>nightshift_v2_data_floors.py</code>). v2 read each floor off the PRISM\ndose-response at the <em>nearest grid dose</em> to the task concentration - but PRISM's grid\nis coarse (4-fold steps), so the measured dose can sit 1.5x off the task dose, and the\n1/3-dose retention for the Task-3 nominations was still a hand-set constant.</span>\n<span class=\"paragraph\">v3 fixes both with measured potency. For each drug it pulls the per-compound median\nIC50 from a local <strong>ChEMBL 37</strong> copy and builds a Hill curve (<code>effect = dose/(dose+IC50)</code>).\nThen it <strong>slides v2's measured viability from the PRISM grid dose to the exact task\ndose</strong> along that curve, and derives the Task-3 1/3-dose retention from the same curve\ninstead of guessing it. Nothing else changes: the kinetics model, the combination\nengine, and the orchestration are imported from v1; the floors are v2's, dose-corrected.</span>\n<span class=\"paragraph\">The correction is small where the task dose already saturates the target (dabrafenib,\nencorafenib: dose &gt;&gt; IC50) and largest where it does not - <strong>trametinib's 10 nM sits\nright at its 10 nM IC50, and binimetinib's 100 nM is below its 182 nM IC50</strong> - so those\nare the drugs whose floors and 1/3-dose behavior v3 most revises.</span></span>"
-          }
-        }
-      ],
-      "console": []
-    },
-    {
-      "id": "qnkX",
       "code_hash": "6660e6e798d000c45c302848c940a50b",
       "outputs": [
         {
@@ -253,7 +45,7 @@
       "console": []
     },
     {
-      "id": "TqIu",
+      "id": "vblA",
       "code_hash": "d664dab16a1f3e5d3dee404450dcee50",
       "outputs": [
         {
@@ -266,7 +58,7 @@
       "console": []
     },
     {
-      "id": "Vxnm",
+      "id": "bkHC",
       "code_hash": "7298fe30c8666d677c5fc5ea695a1144",
       "outputs": [
         {
@@ -279,7 +71,7 @@
       "console": []
     },
     {
-      "id": "DnEU",
+      "id": "lEQa",
       "code_hash": "83b02b94a1891a3620da7cf2901d8745",
       "outputs": [
         {
@@ -292,13 +84,221 @@
       "console": []
     },
     {
-      "id": "ulZA",
-      "code_hash": "d9b102244e1a8268870fc0d49924b6ef",
+      "id": "PKri",
+      "code_hash": "27e4c54c4dd8cf8d47b09ee1a0a4a4a3",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='ulZA-0' random-id='830f514d-e1b1-aa07-b84c-94ab5cfc18d0'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:107.2,&#92;&quot;task_nM&#92;&quot;:1000,&#92;&quot;dose/IC50&#92;&quot;:9.3,&#92;&quot;floor_A_v3&#92;&quot;:26.1,&#92;&quot;floor_A_v2&#92;&quot;:24.6,&#92;&quot;retain3_v3&#92;&quot;:0.838,&#92;&quot;retain3_v2&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:3.2,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:31.2,&#92;&quot;floor_A_v3&#92;&quot;:19.3,&#92;&quot;floor_A_v2&#92;&quot;:20.0,&#92;&quot;retain3_v3&#92;&quot;:0.942,&#92;&quot;retain3_v2&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:0.3,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:333.3,&#92;&quot;floor_A_v3&#92;&quot;:26.2,&#92;&quot;floor_A_v2&#92;&quot;:26.3,&#92;&quot;retain3_v3&#92;&quot;:0.994,&#92;&quot;retain3_v2&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:10.0,&#92;&quot;task_nM&#92;&quot;:10,&#92;&quot;dose/IC50&#92;&quot;:1.0,&#92;&quot;floor_A_v3&#92;&quot;:41.1,&#92;&quot;floor_A_v2&#92;&quot;:22.1,&#92;&quot;retain3_v3&#92;&quot;:0.5,&#92;&quot;retain3_v2&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:4.2,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:23.8,&#92;&quot;floor_A_v3&#92;&quot;:17.8,&#92;&quot;floor_A_v2&#92;&quot;:18.7,&#92;&quot;retain3_v3&#92;&quot;:0.925,&#92;&quot;retain3_v2&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:182.0,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:0.5,&#92;&quot;floor_A_v3&#92;&quot;:17.4,&#92;&quot;floor_A_v2&#92;&quot;:30.0,&#92;&quot;retain3_v3&#92;&quot;:0.437,&#92;&quot;retain3_v2&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:1.8,&#92;&quot;task_nM&#92;&quot;:30,&#92;&quot;dose/IC50&#92;&quot;:16.7,&#92;&quot;floor_A_v3&#92;&quot;:40.9,&#92;&quot;floor_A_v2&#92;&quot;:42.6,&#92;&quot;retain3_v3&#92;&quot;:0.898,&#92;&quot;retain3_v2&#92;&quot;:0.88},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:40.7,&#92;&quot;task_nM&#92;&quot;:5000,&#92;&quot;dose/IC50&#92;&quot;:122.9,&#92;&quot;floor_A_v3&#92;&quot;:20.8,&#92;&quot;floor_A_v2&#92;&quot;:20.8,&#92;&quot;retain3_v3&#92;&quot;:0.984,&#92;&quot;retain3_v2&#92;&quot;:0.8},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:288.4,&#92;&quot;task_nM&#92;&quot;:5000,&#92;&quot;dose/IC50&#92;&quot;:17.3,&#92;&quot;floor_A_v3&#92;&quot;:65.3,&#92;&quot;floor_A_v2&#92;&quot;:65.3,&#92;&quot;retain3_v3&#92;&quot;:0.902,&#92;&quot;retain3_v2&#92;&quot;:0.8},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:2344.2,&#92;&quot;task_nM&#92;&quot;:5000,&#92;&quot;dose/IC50&#92;&quot;:2.1,&#92;&quot;floor_A_v3&#92;&quot;:53.8,&#92;&quot;floor_A_v2&#92;&quot;:53.8,&#92;&quot;retain3_v3&#92;&quot;:0.61,&#92;&quot;retain3_v2&#92;&quot;:0.8},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;drug&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:19.1,&#92;&quot;task_nM&#92;&quot;:500,&#92;&quot;dose/IC50&#92;&quot;:26.2,&#92;&quot;floor_A_v3&#92;&quot;:50.0,&#92;&quot;floor_A_v2&#92;&quot;:50.0,&#92;&quot;retain3_v3&#92;&quot;:0.931,&#92;&quot;retain3_v2&#92;&quot;:0.85},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:15.1,&#92;&quot;task_nM&#92;&quot;:50,&#92;&quot;dose/IC50&#92;&quot;:3.3,&#92;&quot;floor_A_v3&#92;&quot;:26.0,&#92;&quot;floor_A_v2&#92;&quot;:19.3,&#92;&quot;retain3_v3&#92;&quot;:0.683,&#92;&quot;retain3_v2&#92;&quot;:0.85}]&quot;' data-total-rows='12' data-total-columns='8' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;IC50_nM&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;task_nM&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;dose/IC50&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;floor_A_v3&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;floor_A_v2&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;retain3_v3&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;retain3_v2&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/html": "<marimo-ui-element object-id='PKri-0' random-id='a06259ec-c13f-e6df-6985-0fe55f3557de'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;drug&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:107.2,&#92;&quot;task_nM&#92;&quot;:1000,&#92;&quot;dose/IC50&#92;&quot;:9.3,&#92;&quot;floor_A_corrected&#92;&quot;:26.1,&#92;&quot;floor_A_griddose&#92;&quot;:24.6,&#92;&quot;retain3_corrected&#92;&quot;:0.84,&#92;&quot;retain3_handset&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;drug&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:3.2,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:31.2,&#92;&quot;floor_A_corrected&#92;&quot;:19.3,&#92;&quot;floor_A_griddose&#92;&quot;:20.0,&#92;&quot;retain3_corrected&#92;&quot;:0.94,&#92;&quot;retain3_handset&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;drug&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:0.3,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:333.3,&#92;&quot;floor_A_corrected&#92;&quot;:26.2,&#92;&quot;floor_A_griddose&#92;&quot;:26.3,&#92;&quot;retain3_corrected&#92;&quot;:0.99,&#92;&quot;retain3_handset&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;drug&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:10.0,&#92;&quot;task_nM&#92;&quot;:10,&#92;&quot;dose/IC50&#92;&quot;:1.0,&#92;&quot;floor_A_corrected&#92;&quot;:41.1,&#92;&quot;floor_A_griddose&#92;&quot;:22.1,&#92;&quot;retain3_corrected&#92;&quot;:0.5,&#92;&quot;retain3_handset&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;drug&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:4.2,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:23.8,&#92;&quot;floor_A_corrected&#92;&quot;:17.8,&#92;&quot;floor_A_griddose&#92;&quot;:18.7,&#92;&quot;retain3_corrected&#92;&quot;:0.93,&#92;&quot;retain3_handset&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;drug&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:182.0,&#92;&quot;task_nM&#92;&quot;:100,&#92;&quot;dose/IC50&#92;&quot;:0.5,&#92;&quot;floor_A_corrected&#92;&quot;:17.4,&#92;&quot;floor_A_griddose&#92;&quot;:30.0,&#92;&quot;retain3_corrected&#92;&quot;:0.44,&#92;&quot;retain3_handset&#92;&quot;:0.9},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;drug&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:1.8,&#92;&quot;task_nM&#92;&quot;:30,&#92;&quot;dose/IC50&#92;&quot;:16.7,&#92;&quot;floor_A_corrected&#92;&quot;:40.9,&#92;&quot;floor_A_griddose&#92;&quot;:42.6,&#92;&quot;retain3_corrected&#92;&quot;:0.9,&#92;&quot;retain3_handset&#92;&quot;:0.88},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;drug&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:40.7,&#92;&quot;task_nM&#92;&quot;:5000,&#92;&quot;dose/IC50&#92;&quot;:122.9,&#92;&quot;floor_A_corrected&#92;&quot;:20.8,&#92;&quot;floor_A_griddose&#92;&quot;:20.8,&#92;&quot;retain3_corrected&#92;&quot;:0.98,&#92;&quot;retain3_handset&#92;&quot;:0.8},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;drug&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:288.4,&#92;&quot;task_nM&#92;&quot;:5000,&#92;&quot;dose/IC50&#92;&quot;:17.3,&#92;&quot;floor_A_corrected&#92;&quot;:65.3,&#92;&quot;floor_A_griddose&#92;&quot;:65.3,&#92;&quot;retain3_corrected&#92;&quot;:0.9,&#92;&quot;retain3_handset&#92;&quot;:0.8},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;drug&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:2344.2,&#92;&quot;task_nM&#92;&quot;:5000,&#92;&quot;dose/IC50&#92;&quot;:2.1,&#92;&quot;floor_A_corrected&#92;&quot;:53.8,&#92;&quot;floor_A_griddose&#92;&quot;:53.8,&#92;&quot;retain3_corrected&#92;&quot;:0.61,&#92;&quot;retain3_handset&#92;&quot;:0.8},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;drug&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:19.1,&#92;&quot;task_nM&#92;&quot;:500,&#92;&quot;dose/IC50&#92;&quot;:26.2,&#92;&quot;floor_A_corrected&#92;&quot;:50.0,&#92;&quot;floor_A_griddose&#92;&quot;:50.0,&#92;&quot;retain3_corrected&#92;&quot;:0.93,&#92;&quot;retain3_handset&#92;&quot;:0.85},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;drug&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;IC50_nM&#92;&quot;:15.1,&#92;&quot;task_nM&#92;&quot;:50,&#92;&quot;dose/IC50&#92;&quot;:3.3,&#92;&quot;floor_A_corrected&#92;&quot;:26.0,&#92;&quot;floor_A_griddose&#92;&quot;:19.3,&#92;&quot;retain3_corrected&#92;&quot;:0.68,&#92;&quot;retain3_handset&#92;&quot;:0.85}]&quot;' data-total-rows='12' data-total-columns='8' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;drug&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;IC50_nM&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;task_nM&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;dose/IC50&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;floor_A_corrected&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;floor_A_griddose&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;retain3_corrected&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;retain3_handset&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "2487dbdfe304318c9f76a606ec956de1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Xref-0' random-id='670e23b8-658b-4f76-790d-d411bb841386'><marimo-vega data-initial-value='{}' data-label='null' data-spec='{&quot;config&quot;:{&quot;view&quot;:{&quot;continuousWidth&quot;:300,&quot;continuousHeight&quot;:300}},&quot;data&quot;:{&quot;url&quot;:&quot;data:application/vnd.apache.arrow.file;base64,QVJST1cxAAD/////sAAAAAQAAADy////FAAAAAQAAQAAAAoACwAIAAoABAD4////DAAAAAgACAAAAAQAAgAAAEAAAAAEAAAAtP///yAAAAAQAAAACAAAAAEDAAAAAAAA+v///wIABgAGAAQADgAAAGRvc2Vfb3Zlcl9JQzUwAADs////LAAAACAAAAAYAAAAARgAABAAEgAEABAAEQAIAAAADAAAAAAA/P///wQABAAEAAAAZHJ1ZwAAAAAAAAAA/////8gAAAAEAAAA7P///0ABAAAAAAAAFAAAAAQAAwAMABMAEAASAAwABADm////DAAAAAAAAAB0AAAAKAAAABQAAAAAAA4AGAAEAAwAEAAAABQAAQAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAGAAAAAAAAAAAAAAAAIAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAsAAABCaW5pbWV0aW5pYgAKAAAAVHJhbWV0aW5pYgAADAAAAENhcGl2YXNlcnRpYgwAAABQYW5vYmlub3N0YXQLAAAAVmVtdXJhZmVuaWIABwAAAFRBSy03MzMAAAAAAAkAAABBbHBlbGlzaWIAAAALAAAAQ29iaW1ldGluaWIADAAAAFNhcGFuaXNlcnRpYgoAAABEYWJyYWZlbmliAAALAAAAUmVnb3JhZmVuaWIACwAAAEVuY29yYWZlbmliAJqZmZmZmeE/AAAAAAAA8D8K16NwPQoBQHsUrkfhegpAKVyPwvWoIkDsUbgehaswQNejcD0KVzFAj8L1KFzPN0CuR+F6FC46QAAAAAAAQD9AZmZmZma2XkDhehSuR9V0QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/////wAAAAAEAAAA7P///0AAAAA4AAAAFAAAAAQAAAAMABIAEAAEAAgADAABAAAAwAAAAAAAAADQAAAAAAAAAEABAAAAAAAAAAAAAAAAAAD4////DAAAAAgACAAAAAQAAgAAAEAAAAAEAAAAtP///yAAAAAQAAAACAAAAAEDAAAAAAAA+v///wIABgAGAAQADgAAAGRvc2Vfb3Zlcl9JQzUwAADs////LAAAACAAAAAYAAAAARgAABAAEgAEABAAEQAIAAAADAAAAAAA/P///wQABAAEAAAAZHJ1ZwDVAAAAQVJST1cx&quot;,&quot;format&quot;:{&quot;type&quot;:&quot;arrow&quot;}},&quot;mark&quot;:{&quot;type&quot;:&quot;bar&quot;},&quot;encoding&quot;:{&quot;color&quot;:{&quot;condition&quot;:{&quot;test&quot;:&quot;(datum.dose_over_IC50 &#92;u003c 3)&quot;,&quot;value&quot;:&quot;#d62728&quot;},&quot;value&quot;:&quot;#1f77b4&quot;},&quot;tooltip&quot;:[{&quot;field&quot;:&quot;drug&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;dose_over_IC50&quot;,&quot;type&quot;:&quot;quantitative&quot;}],&quot;x&quot;:{&quot;field&quot;:&quot;dose_over_IC50&quot;,&quot;scale&quot;:{&quot;type&quot;:&quot;log&quot;},&quot;title&quot;:&quot;task dose / ChEMBL IC50 (log; &#92;u003c1 = below IC50)&quot;,&quot;type&quot;:&quot;quantitative&quot;},&quot;y&quot;:{&quot;field&quot;:&quot;drug&quot;,&quot;sort&quot;:&quot;x&quot;,&quot;title&quot;:null,&quot;type&quot;:&quot;nominal&quot;}},&quot;height&quot;:420,&quot;title&quot;:&quot;Red = task dose is sub-saturating; v3 revises these most&quot;,&quot;width&quot;:560,&quot;&#36;schema&quot;:&quot;https://vega.github.io/schema/vega-lite/v5.20.1.json&quot;}' data-chart-selection='true' data-field-selection='true' data-embed-options='{}'></marimo-vega></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "50a231a2ab62984855e9a42a6253930a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "93f7e1df4f6dba1669821628d9898299",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='BYtC-0' random-id='e089bfc4-242c-8be3-990b-9bd0c8f42a0a'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;task&#92;&quot;:&#92;&quot;1.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;task&#92;&quot;:&#92;&quot;1.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;task&#92;&quot;:&#92;&quot;1.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;task&#92;&quot;:&#92;&quot;1.4&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;task&#92;&quot;:&#92;&quot;1.5&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;task&#92;&quot;:&#92;&quot;2.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;task&#92;&quot;:&#92;&quot;2.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;task&#92;&quot;:&#92;&quot;2.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;task&#92;&quot;:&#92;&quot;3.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;task&#92;&quot;:&#92;&quot;3.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;task&#92;&quot;:&#92;&quot;4.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;}]&quot;' data-total-rows='11' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;task&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "35930730cdad19af2d96ca7ef639f19f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='RGSE-0' random-id='5a34e022-04f7-2445-b338-d3770b581482'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:52},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:64},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:75},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:75},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:5,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:76},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:6,&#92;&quot;condition&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:7,&#92;&quot;condition&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:8,&#92;&quot;condition&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:9,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:82},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:10,&#92;&quot;condition&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:82},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:11,&#92;&quot;condition&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:86},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:12,&#92;&quot;condition&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:90},{&#92;&quot;_marimo_row_id&#92;&quot;:12,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:35},{&#92;&quot;_marimo_row_id&#92;&quot;:13,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:38},{&#92;&quot;_marimo_row_id&#92;&quot;:14,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:50},{&#92;&quot;_marimo_row_id&#92;&quot;:15,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:51}]&quot;' data-total-rows='48' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='16' data-field-types='[[&quot;cell_line&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;timepoint_h&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;rank&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;condition&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;viability_pct&quot;,[&quot;integer&quot;,&quot;i64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "01d1adfe0e8ed18799c7398569a4122c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"what-v3-changes-and-the-honest-limit\">What v3 changes, and the honest limit</h2>\n<span class=\"paragraph\">This correction is principled but bounded: because the PRISM read already picks the\n<em>nearest</em> grid dose, the slide to the exact task dose is small for most drugs and only\nmaterial for the sub-saturating ones (trametinib, binimetinib, and the 1/3-dose Task-3\nnominations). Two limits it does <strong>not</strong> fix. First, a median IC50 pooled across\nenzyme/cell/off-target assays is a coarse potency proxy, and a short-exposure IC50 is not\nthe multi-day CTG kill, so the Hill slide is a dose-interpolation, not a re-derivation of\nthe effect. Second, and more important: <strong>this submission shares its kinetics + Bliss/\nsynergy engine with the others in this set</strong> (see the repo README) - they differ only in\nthe floor input, so they cannot bracket the engine's own assumptions, only the floor's.\nThe real 16-48 h CTG readout is the only thing that tests the engine; until then, treat\nthese as one model under several floor choices, not as a calibrated spread.</span>\n<h2 id=\"to-extend\">To extend</h2>\n<ul>\n<li>Calibrate the kinetic curves themselves against a real CTG time-course - the last\n  hand-set piece, and the one every submission in this set shares.</li>\n<li>Use cell-line-specific (melanoma) ChEMBL GI50s instead of the pooled per-compound IC50.</li>\n<li>Swap the Bliss/synergy engine for an independent method and compare, to actually test\n  (not just re-floor) the load-bearing combination assumptions.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "bf5a736ebfbff5e8bfeda1f8e0ee05c2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><hr />\n<h2 id=\"vendored-engine-appendix\">Vendored engine (appendix)</h2>\n<span class=\"paragraph\">Below is the shared, notebook-agnostic machinery this submission reuses: the\nBreadbox HTTP helpers, the drug panel, the CTG-kinetics + Bliss/synergy model,\nand the task-runner. It is vendored inline (rather than imported) so this file\nruns as a single standalone gist. The science specific to this submission is all\nabove; this section is boilerplate you can collapse.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "7fa2977524d0e7c6878359a438b90acc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "738a63459950f933ddca745d5a93ddf9",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "359d76a1fc712333e91145504a74848a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "ee6c45eba0d7eeee375a36fc5df9b304",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "69775135f8dde1a74f300efa95c61ccc",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "55abad23e4dfd8691f168c744b8007e0",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "2eedfd3c3d4a336fc3b85dbc9ae01153",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "3c48ffe7d8e6790ebc16ba5b7e0bdfc5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "da565b1af387762a2ab258280f8872ae",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "b5a48d93f0976ebd4871d21e94c4f572",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
           }
         }
       ],
@@ -306,12 +306,12 @@
     },
     {
       "id": "ecfG",
-      "code_hash": "2487dbdfe304318c9f76a606ec956de1",
+      "code_hash": "f68789315fa3e3e79e9b6249b8345260",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='ecfG-0' random-id='e71723b9-f175-e5f8-da5c-bb2c9ca435a3'><marimo-vega data-initial-value='{}' data-label='null' data-spec='{&quot;config&quot;:{&quot;view&quot;:{&quot;continuousWidth&quot;:300,&quot;continuousHeight&quot;:300}},&quot;data&quot;:{&quot;url&quot;:&quot;data:application/vnd.apache.arrow.file;base64,QVJST1cxAAD/////sAAAAAQAAADy////FAAAAAQAAQAAAAoACwAIAAoABAD4////DAAAAAgACAAAAAQAAgAAAEAAAAAEAAAAtP///yAAAAAQAAAACAAAAAEDAAAAAAAA+v///wIABgAGAAQADgAAAGRvc2Vfb3Zlcl9JQzUwAADs////LAAAACAAAAAYAAAAARgAABAAEgAEABAAEQAIAAAADAAAAAAA/P///wQABAAEAAAAZHJ1ZwAAAAAAAAAA/////8gAAAAEAAAA7P///0ABAAAAAAAAFAAAAAQAAwAMABMAEAASAAwABADm////DAAAAAAAAAB0AAAAKAAAABQAAAAAAA4AGAAEAAwAEAAAABQAAQAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAGAAAAAAAAAAAAAAAAIAAAAMAAAAAAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAAAAAAAsAAABCaW5pbWV0aW5pYgAKAAAAVHJhbWV0aW5pYgAADAAAAENhcGl2YXNlcnRpYgwAAABQYW5vYmlub3N0YXQLAAAAVmVtdXJhZmVuaWIABwAAAFRBSy03MzMAAAAAAAkAAABBbHBlbGlzaWIAAAALAAAAQ29iaW1ldGluaWIADAAAAFNhcGFuaXNlcnRpYgoAAABEYWJyYWZlbmliAAALAAAAUmVnb3JhZmVuaWIACwAAAEVuY29yYWZlbmliAJqZmZmZmeE/AAAAAAAA8D8K16NwPQoBQHsUrkfhegpAKVyPwvWoIkDsUbgehaswQNejcD0KVzFAj8L1KFzPN0CuR+F6FC46QAAAAAAAQD9AZmZmZma2XkDhehSuR9V0QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/////wAAAAAEAAAA7P///0AAAAA4AAAAFAAAAAQAAAAMABIAEAAEAAgADAABAAAAwAAAAAAAAADQAAAAAAAAAEABAAAAAAAAAAAAAAAAAAD4////DAAAAAgACAAAAAQAAgAAAEAAAAAEAAAAtP///yAAAAAQAAAACAAAAAEDAAAAAAAA+v///wIABgAGAAQADgAAAGRvc2Vfb3Zlcl9JQzUwAADs////LAAAACAAAAAYAAAAARgAABAAEgAEABAAEQAIAAAADAAAAAAA/P///wQABAAEAAAAZHJ1ZwDVAAAAQVJST1cx&quot;,&quot;format&quot;:{&quot;type&quot;:&quot;arrow&quot;}},&quot;mark&quot;:{&quot;type&quot;:&quot;bar&quot;},&quot;encoding&quot;:{&quot;color&quot;:{&quot;condition&quot;:{&quot;test&quot;:&quot;(datum.dose_over_IC50 &#92;u003c 3)&quot;,&quot;value&quot;:&quot;#d62728&quot;},&quot;value&quot;:&quot;#1f77b4&quot;},&quot;tooltip&quot;:[{&quot;field&quot;:&quot;drug&quot;,&quot;type&quot;:&quot;nominal&quot;},{&quot;field&quot;:&quot;dose_over_IC50&quot;,&quot;type&quot;:&quot;quantitative&quot;}],&quot;x&quot;:{&quot;field&quot;:&quot;dose_over_IC50&quot;,&quot;scale&quot;:{&quot;type&quot;:&quot;log&quot;},&quot;title&quot;:&quot;task dose / ChEMBL IC50 (log; &#92;u003c1 = below IC50)&quot;,&quot;type&quot;:&quot;quantitative&quot;},&quot;y&quot;:{&quot;field&quot;:&quot;drug&quot;,&quot;sort&quot;:&quot;x&quot;,&quot;title&quot;:null,&quot;type&quot;:&quot;nominal&quot;}},&quot;height&quot;:420,&quot;title&quot;:&quot;Red = task dose is sub-saturating; v3 revises these most&quot;,&quot;width&quot;:560,&quot;&#36;schema&quot;:&quot;https://vega.github.io/schema/vega-lite/v5.20.1.json&quot;}' data-chart-selection='true' data-field-selection='true' data-embed-options='{}'></marimo-vega></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -319,7 +319,7 @@
     },
     {
       "id": "Pvdt",
-      "code_hash": "3b9bd24cf7f6cc9699c556ae24adfeb6",
+      "code_hash": "74d1fdc2c6dd9ecf7c7028b168082b2b",
       "outputs": [
         {
           "type": "data",
@@ -332,12 +332,12 @@
     },
     {
       "id": "ZBYS",
-      "code_hash": "707b3c2d1eef1f40c9a9c5a6178b3a41",
+      "code_hash": "2a4c1b24422c8c99df12d16419d641c3",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='ZBYS-0' random-id='d9ea8a6b-539e-db8f-2965-3ddf9e796ed0'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;task&#92;&quot;:&#92;&quot;1.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;task&#92;&quot;:&#92;&quot;1.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;task&#92;&quot;:&#92;&quot;1.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;task&#92;&quot;:&#92;&quot;1.4&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;task&#92;&quot;:&#92;&quot;1.5&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;task&#92;&quot;:&#92;&quot;2.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;task&#92;&quot;:&#92;&quot;2.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;task&#92;&quot;:&#92;&quot;2.3&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;task&#92;&quot;:&#92;&quot;3.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;task&#92;&quot;:&#92;&quot;3.2&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;task&#92;&quot;:&#92;&quot;4.1&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;written&#92;&quot;}]&quot;' data-total-rows='11' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='12' data-field-types='[[&quot;task&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -345,12 +345,12 @@
     },
     {
       "id": "aLJB",
-      "code_hash": "35930730cdad19af2d96ca7ef639f19f",
+      "code_hash": "1bad5f5e613f7a6859c14475c0f7a888",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/html": "<marimo-ui-element object-id='aLJB-0' random-id='32ceb2b0-892d-0f5a-0254-87467a01dabf'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;_marimo_row_id&#92;&quot;:0,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:52},{&#92;&quot;_marimo_row_id&#92;&quot;:1,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:64},{&#92;&quot;_marimo_row_id&#92;&quot;:2,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:75},{&#92;&quot;_marimo_row_id&#92;&quot;:3,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:75},{&#92;&quot;_marimo_row_id&#92;&quot;:4,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:5,&#92;&quot;condition&#92;&quot;:&#92;&quot;Dabrafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:76},{&#92;&quot;_marimo_row_id&#92;&quot;:5,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:6,&#92;&quot;condition&#92;&quot;:&#92;&quot;Sapanisertib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:6,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:7,&#92;&quot;condition&#92;&quot;:&#92;&quot;Vemurafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:7,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:8,&#92;&quot;condition&#92;&quot;:&#92;&quot;Encorafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:78},{&#92;&quot;_marimo_row_id&#92;&quot;:8,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:9,&#92;&quot;condition&#92;&quot;:&#92;&quot;Trametinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:82},{&#92;&quot;_marimo_row_id&#92;&quot;:9,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:10,&#92;&quot;condition&#92;&quot;:&#92;&quot;TAK-733&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:82},{&#92;&quot;_marimo_row_id&#92;&quot;:10,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:11,&#92;&quot;condition&#92;&quot;:&#92;&quot;Capivasertib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:86},{&#92;&quot;_marimo_row_id&#92;&quot;:11,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:24,&#92;&quot;rank&#92;&quot;:12,&#92;&quot;condition&#92;&quot;:&#92;&quot;Alpelisib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:90},{&#92;&quot;_marimo_row_id&#92;&quot;:12,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:1,&#92;&quot;condition&#92;&quot;:&#92;&quot;Panobinostat&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:35},{&#92;&quot;_marimo_row_id&#92;&quot;:13,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:2,&#92;&quot;condition&#92;&quot;:&#92;&quot;Regorafenib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:38},{&#92;&quot;_marimo_row_id&#92;&quot;:14,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:3,&#92;&quot;condition&#92;&quot;:&#92;&quot;Binimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:50},{&#92;&quot;_marimo_row_id&#92;&quot;:15,&#92;&quot;cell_line&#92;&quot;:&#92;&quot;A375&#92;&quot;,&#92;&quot;timepoint_h&#92;&quot;:48,&#92;&quot;rank&#92;&quot;:4,&#92;&quot;condition&#92;&quot;:&#92;&quot;Cobimetinib&#92;&quot;,&#92;&quot;viability_pct&#92;&quot;:51}]&quot;' data-total-rows='48' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='16' data-field-types='[[&quot;cell_line&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;timepoint_h&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;rank&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;condition&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;viability_pct&quot;,[&quot;integer&quot;,&quot;i64&quot;]]]' data-selection='&quot;multi&quot;' data-show-filters='true' data-show-download='true' data-show-column-summaries='true' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='true' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+            "text/plain": ""
           }
         }
       ],
@@ -358,12 +358,25 @@
     },
     {
       "id": "nHfw",
-      "code_hash": "6e1a8139b35c3edcc4e239569be37c12",
+      "code_hash": "bed5a2332d1775befadc7eee8f6ec982",
       "outputs": [
         {
           "type": "data",
           "data": {
-            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"what-v3-changes-and-the-honest-limit\">What v3 changes, and the honest limit</h2>\n<span class=\"paragraph\">v3's correction is principled but bounded: because v2 already picked the <em>nearest</em> grid\ndose, the slide to the exact task dose is small for most drugs and only material for the\nsub-saturating ones (trametinib, binimetinib, and the 1/3-dose Task-3 nominations). Two\nlimits it does <strong>not</strong> fix. First, a median IC50 pooled across enzyme/cell/off-target\nassays is a coarse potency proxy, and a short-exposure IC50 is not the multi-day CTG kill,\nso the Hill slide is a dose-interpolation, not a re-derivation of the effect. Second, and\nmore important: <strong>all three submissions share one unchanged kinetics + Bliss/synergy\nengine.</strong> v1-&gt;v2-&gt;v3 swap only the floor input, so they are <em>not</em> three independent\nestimates - they cannot bracket the engine's own assumptions, only the floor's. The real\n16-48 h CTG readout is the only thing that tests the engine; until then, treat the three\nas one model under three floor choices, not as a calibrated spread.</span>\n<h2 id=\"to-extend\">To extend</h2>\n<ul>\n<li>Calibrate the kinetic curves themselves against a real CTG time-course - the last\n  hand-set piece, and the one shared across all three submissions.</li>\n<li>Use cell-line-specific (melanoma) ChEMBL GI50s instead of the pooled per-compound IC50.</li>\n<li>Swap the Bliss/synergy engine for an independent method and compare, to actually test\n  (not just re-floor) the load-bearing combination assumptions.</li>\n</ul></span>"
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "xXTn",
+      "code_hash": "6bec9a49a0ec8b2e98aaf3a7d5e389c8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
           }
         }
       ],

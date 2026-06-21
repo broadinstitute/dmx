@@ -3,7 +3,7 @@
   "numbers": {
     "tasks_submitted": 11,
     "drugs_with_prism_floors": 11,
-    "drugs_v1_fallback": 1
+    "drugs_judgment_fallback": 1
   },
   "files": [
     "data/processed/nightshift_v2/1.1/output.json",

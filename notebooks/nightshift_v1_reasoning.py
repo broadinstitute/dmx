@@ -56,33 +56,311 @@ with app.setup:
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    # Night Shift submission v1 - reasoning baseline
+    # Night Shift submission - reasoning baseline
 
-    First of three submissions to the Karman melanoma benchmark, each removing one
-    layer of hand-tuning and replacing it with measured data:
+    Predict CellTiter-Glo (CTG) % viability for two melanoma lines (A375, LOXIMVI)
+    under a MAPK-inhibitor panel at 16 / 24 / 48 h, and rank conditions by effect.
+    No experimental readout is provided, so these are predictions.
 
-    - **v1 (this notebook):** pharmacology reasoning + DepMap-*anchored-by-judgment*
-      effect floors + a CTG-kinetics prior.
-    - **v2 (`nightshift_v2_data_floors.py`):** the same kinetics engine, but floors
-      *derived* from PRISM/GDSC dose-level viability instead of judgment.
-    - **v3 (`nightshift_v3_chembl_calibrated.py`):** v2 with the dose-response
-      calibrated to ChEMBL potency, so dose-saturation stops being a guess too.
+    The predictions turn on two hypotheses, and the cells below are the loop that tests
+    them - state a hypothesis, run a pull, look at what came back - not a pile of tables:
 
-    The task: predict CellTiter-Glo (CTG) % viability for two melanoma lines (A375,
-    LOXIMVI) under MAPK and other inhibitors at 16 / 24 / 48 h, and rank conditions
-    by effect. No readout is provided, so these are predictions. Two checkable facts
-    drive every ranking; this notebook verifies both against DepMap before predicting:
+    - **H1 (cell-line identity).** A375 is BRAF-V600E-addicted; LOXIMVI is not
+      BRAF-V600E-driven. Tested against DepMap CRISPR dependency and drug sensitivity in
+      Instruments 1-2. The genetics pull settles A375 cleanly but leaves LOXIMVI
+      *unsettled* - which is exactly the seam a later data source can pull apart.
+    - **H2 (assay kinetics).** At a 16-48 h CTG endpoint, cytostatic MAPK inhibitors barely
+      move viability while broadly cytotoxic agents (HDAC, mTOR) drop it fast, so **the
+      lowest-viability drug at 24 h is usually not the most potent one.** This is a
+      mechanistic prior the model encodes; with no readout it is *not* tested here, and its
+      falsifier is named at the end.
 
-    1. **Addiction.** A375 is BRAF-V600E-addicted; LOXIMVI is not BRAF-V600E-driven.
-       That sets whether a BRAF/MEK inhibitor does anything.
-    2. **CTG kinetics.** CTG reads live-cell ATP. MAPK inhibitors are *cytostatic*
-       (arrest, slow kill) so they barely separate from vehicle at 24 h; broadly
-       *cytotoxic* agents (HDAC, mTOR) drop viability fast. **The most potent drug
-       long-term is often not the lowest-viability one at 24 h.**
+    The terminal hypothesis - what gets committed - is the ranked, predicted viability. Each
+    drug gets a per-line **effect floor** set by judgment (anchored to the DepMap data, but a
+    judgment call) and a kinetic class, run through
+    `floor + (100-floor) * (1 - realized_fraction(t, class))`. These rankings are model
+    outputs, not independent findings; the "evidence vs assumption" cell at the end marks
+    which parts are load-bearing data and which are my knobs. The mechanics are vendored in
+    the appendix so this file runs as a standalone gist; it is one of a small set of
+    submissions that swap how the floors are produced (see the repo README).
+    """)
+    return
 
-    This file also defines the shared engine (`predict_single`, `predict_combo`,
-    `run_submission`, ...) that v2 and v3 import - they change only how the floors
-    are produced.
+
+@app.function
+def methods_note_v1() -> str:
+    """v1 methods preamble embedded in each reasoning.md."""
+    return (
+        "## Method (v1 - reasoning baseline)\n\n"
+        "No experimental readout was provided; these are predictions. Each drug has a per-line "
+        "**effect floor** (asymptotic % viability at its task dose, set by *judgment* anchored to "
+        "PRISM/GDSC AUC + dose-vs-IC50 margin + pathway dependence) and a **kinetic class**. "
+        "Prediction = `floor + (100-floor) * (1 - realized_fraction(t, class))`. Combinations use "
+        "Bliss across distinct pathways with a line-aware synergy factor.\n\n"
+    )
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Instrument 1 - what are these two lines addicted to?
+
+    CRISPR (Chronos) dependency and hotspot calls from DepMap. Strongly negative
+    dependency means the line dies without that gene.
+    """)
+    return
+
+
+@app.cell
+def _():
+    def _line_values(gene, dataset):
+        df = matrix_feature(dataset, gene, value_name="v")
+        m = dict(zip(df["depmap_id"].to_list(), df["v"].to_list())) if not df.is_empty() else {}
+        return {"A375": m.get(A375), "LOXIMVI": m.get(LOXIMVI)}
+
+    genetics = pl.DataFrame(
+        [
+            {"feature": "BRAF dependency (Chronos)", **_line_values("BRAF", "Chronos_Combined")},
+            {"feature": "MAP2K1 (MEK1) dependency", **_line_values("MAP2K1", "Chronos_Combined")},
+            {"feature": "BRAF hotspot mutation", **_line_values("BRAF", "mutations_hotspot")},
+        ]
+    )
+    mo.md("### Dependency & mutation: A375 vs LOXIMVI")
+    mo.ui.table(genetics, page_size=10)
+    return (genetics,)
+
+
+@app.cell
+def _(genetics):
+    def _val(feature, line):
+        return genetics.filter(pl.col("feature") == feature)[line][0]
+
+    mo.md(
+        "**H1, tested against CRISPR.** A375 BRAF dependency = "
+        f"`{_val('BRAF dependency (Chronos)', 'A375')}`, MAP2K1 = "
+        f"`{_val('MAP2K1 (MEK1) dependency', 'A375')}` - strongly negative, so H1's A375 half is "
+        "confirmed: it dies without BRAF/MEK, a BRAF-V600E-addicted line. H1's LOXIMVI half is "
+        f"*not* settled here: LOXIMVI BRAF dependency = `{_val('BRAF dependency (Chronos)', 'LOXIMVI')}` "
+        "- it is absent from the CRISPR screen, so genetics is silent on it (silence is not "
+        "confirmation). Whether LOXIMVI is BRAF-inhibitor-resistant rests entirely on the drug "
+        "data below - and that is the exact seam where a different screen can later disagree."
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Instrument 2 - empirical drug sensitivity for the actual panel
+
+    PRISM (5-day) and GDSC2 are longer assays than our 16-48 h endpoint and at their
+    own doses, so they anchor *relative* efficacy and the line-to-line contrast, not
+    the % we predict. **AUC: lower = more sensitive** (1.0 = no effect).
+    """)
+    return
+
+
+@app.cell
+def _():
+    panel_labels = [
+        "VEMURAFENIB",
+        "DABRAFENIB",
+        "ENCORAFENIB",
+        "TRAMETINIB",
+        "COBIMETINIB",
+        "BINIMETINIB",
+        "REGORAFENIB",
+        "ALPELISIB",
+        "CAPIVASERTIB",
+        "PANOBINOSTAT",
+    ]
+
+    def _auc_frame(dataset_id, label):
+        raw = bb_post(f"datasets/matrix/{dataset_id}", {"features": panel_labels, "feature_identifier": "label"})
+        rows = []
+        for drug in panel_labels:
+            v = raw.get(drug, {}) if isinstance(raw, dict) else {}
+            rows.append({"drug": drug.title(), f"{label}_A375": v.get(A375), f"{label}_LOXIMVI": v.get(LOXIMVI)})
+        return pl.DataFrame(rows)
+
+    sensitivity = _auc_frame(PRISM_SEC_AUC, "PRISM").join(_auc_frame(GDSC2_AUC, "GDSC2"), on="drug", how="left")
+    mo.md("### Drug-sensitivity AUC anchors (lower = more sensitive)")
+    mo.ui.table(sensitivity.with_columns(pl.col(pl.Float64).round(3)), page_size=12)
+    return (sensitivity,)
+
+
+@app.cell
+def _(sensitivity):
+    def _auc(drug, col):
+        v = sensitivity.filter(pl.col("drug") == drug)[col][0]
+        return "n/a" if v is None else round(v, 2)
+
+    mo.md(
+        "**H1's LOXIMVI half, tested against drug response.** GDSC2 dabrafenib: A375 "
+        f"`{_auc('Dabrafenib', 'GDSC2_A375')}` (sensitive) vs LOXIMVI "
+        f"`{_auc('Dabrafenib', 'GDSC2_LOXIMVI')}` (resistant) - this longer assay settles LOXIMVI as "
+        "BRAF-inhibitor-resistant, so H1 stands on this evidence. (Hold that lightly: a different "
+        "screen disagrees, and a companion submission leads with that collision.) Consistent with H2, "
+        f"PRISM panobinostat is the single most potent agent in both lines (A375 `{_auc('Panobinostat', 'PRISM_A375')}` "
+        f"/ LOXIMVI `{_auc('Panobinostat', 'PRISM_LOXIMVI')}`) - a broadly cytotoxic HDAC inhibitor, not a "
+        "MAPK drug. These live numbers anchor the floors below."
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## Effect floors (judgment, data-anchored)
+
+    The floors below are curated estimates from the Instrument-2 AUCs + dose-vs-IC50
+    margin + pathway dependence. BRAF inhibitors: deep in A375, shallow in LOXIMVI.
+    PI3K/AKT: weak everywhere. Panobinostat: deep in both (cytotoxic). These judgment
+    floors are this submission's one soft spot - the obvious next step is to read them
+    straight from data instead.
+    """)
+    return
+
+
+@app.cell
+def _():
+    # v1 judgment floors (asymptotic % viability at task dose), per line.
+    FLOORS_V1 = {
+        "Vemurafenib": (45, 92),
+        "Dabrafenib": (28, 82),
+        "Encorafenib": (33, 82),
+        "Trametinib": (30, 60),
+        "Cobimetinib": (32, 62),
+        "Binimetinib": (38, 62),
+        "TAK-733": (36, 62),
+        "Regorafenib": (55, 58),
+        "Alpelisib": (80, 78),
+        "Capivasertib": (78, 72),
+        "Sapanisertib": (50, 52),
+        "Panobinostat": (30, 25),
+    }
+    drugs_v1 = {n: {**meta, "floorA": FLOORS_V1[n][0], "floorL": FLOORS_V1[n][1]} for n, meta in drug_panel().items()}
+
+    def floor_v1(name, line):
+        return drugs_v1[name]["floorA" if line == "A375" else "floorL"]
+
+    drug_table = pl.DataFrame(
+        [
+            {
+                "drug": n,
+                "target": p["target"],
+                "class": p["kclass"],
+                "floor_A375": p["floorA"],
+                "floor_LOXIMVI": p["floorL"],
+                "conc": p["conc"],
+            }
+            for n, p in drugs_v1.items()
+        ]
+    )
+    mo.md("### v1 drug parameter table")
+    mo.ui.table(drug_table, page_size=12)
+    return drugs_v1, floor_v1
+
+
+@app.cell
+def _(drugs_v1, floor_v1):
+    single_preview = pl.DataFrame(
+        [
+            {"cell_line": line, "timepoint_h": t, **r}
+            for line in ("A375", "LOXIMVI")
+            for t in (24, 48)
+            for r in rank_single_agents(line, t, drugs_v1, floor_v1)
+        ]
+    ).select("cell_line", "timepoint_h", "rank", "condition", "concentration", "viability_pct")
+    mo.md("### All single-agent predictions (A375/LOXIMVI x 24/48 h)")
+    mo.ui.table(single_preview.sort("cell_line", "timepoint_h", "rank"), page_size=16)
+    return (single_preview,)
+
+
+@app.cell
+def _(single_preview):
+    _chart = (
+        alt.Chart(
+            single_preview.with_columns(
+                (pl.col("cell_line") + " " + pl.col("timepoint_h").cast(pl.Utf8) + "h").alias("cond")
+            )
+        )
+        .mark_circle(size=70, opacity=0.85)
+        .encode(
+            x=alt.X("viability_pct:Q", title="predicted % viability", scale=alt.Scale(domain=[0, 105])),
+            y=alt.Y("condition:N", sort=alt.EncodingSortField("viability_pct", op="min"), title=None),
+            color=alt.Color("cond:N", title=None),
+            tooltip=["condition", "cell_line", "timepoint_h", "viability_pct"],
+        )
+        .properties(width=560, height=420, title="Lower = more effect. MAPK drugs bite A375, spare LOXIMVI.")
+    )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell
+def _(drugs_v1, floor_v1, genetics, sensitivity):
+    def _g(feature, line):
+        return genetics.filter(pl.col("feature") == feature)[line][0]
+
+    def _s(drug, col):
+        return sensitivity.filter(pl.col("drug") == drug)[col][0]
+
+    status = run_submission(
+        drugs_v1,
+        floor_v1,
+        OUT_DIR,
+        methods_note_v1(),
+        "Night Shift melanoma drug-response predictions (v1, reasoning baseline): per-condition CTG "
+        "% viability for A375 (BRAF-V600E) and LOXIMVI from judgment effect floors + a CTG-kinetics "
+        "model. Predictions, not measurements.",
+        {
+            "A375_BRAF_dependency_chronos": _g("BRAF dependency (Chronos)", "A375"),
+            "GDSC2_dabrafenib_AUC_A375": _s("Dabrafenib", "GDSC2_A375"),
+            "GDSC2_dabrafenib_AUC_LOXIMVI": _s("Dabrafenib", "GDSC2_LOXIMVI"),
+        },
+    )
+    mo.md("### v1 submission complete - 11 tasks + summary.json under data/processed/nightshift_v1/")
+    mo.ui.table(status, page_size=12)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## What is evidence, what is assumption
+
+    - **Independent evidence (DepMap, live above):** A375 BRAF/MAP2K1 dependency; PRISM/GDSC AUCs;
+      the GDSC2 dabrafenib A375-vs-LOXIMVI contrast. These could have contradicted the prior and did not.
+    - **Assumptions (mine):** the per-line floors (judgment), the three kinetic curves, the synergy
+      constants. "BRAF+MEK doublets win in A375" is the `0.72 vs 0.95` synergy input read back out.
+
+    **Calibration.** High confidence in the *direction* of the big contrasts (MAPK inhibitors hit
+    A375 far harder than LOXIMVI; panobinostat tops both; clinical doublets are the best A375 combos).
+    Low confidence in absolute magnitudes and the fine ordering within the clustered 24 h MAPK
+    inhibitors. **Falsifier:** a real 24 h A375 readout where a BRAF/MEK inhibitor drops viability
+    below panobinostat would break the kinetics premise.
+
+    ## To extend
+
+    - Read the effect floors straight from dose-level viability data instead of judgment.
+    - Calibrate the drug concentration-response with measured potency (e.g. ChEMBL IC50s).
+    - Calibrate the kinetic curves against any one real CTG time-course.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Vendored engine (appendix)
+
+    Below is the shared, notebook-agnostic machinery this submission reuses: the
+    Breadbox HTTP helpers, the drug panel, the CTG-kinetics + Bliss/synergy model,
+    and the task-runner. It is vendored inline (rather than imported) so this file
+    runs as a single standalone gist. The science specific to this submission is all
+    above; this section is boilerplate you can collapse.
     """)
     return
 
@@ -130,7 +408,7 @@ def matrix_feature(dataset_id: str, feature_label: str, value_name: str = "value
 
 @app.function
 def drug_panel() -> dict:
-    """Per-drug mechanism metadata shared across all three submissions (no floors).
+    """Per-drug mechanism metadata: the assay-fixed part of the panel (no floors).
 
     Floors are what each submission produces differently; everything else - target,
     kinetic class, fraction of effect retained at 1/3 dose, task concentration - is
@@ -326,17 +604,17 @@ def task4_response() -> str:
 
 @app.function
 def task4_analyses() -> str:
-    """Task 4.1 'analyses' field - cites independent DepMap data, not the prediction model."""
+    """Task 4.1 'analyses' field - cites published DepMap facts, not the prediction model."""
     return (
-        "Support here is the *independent* DepMap data this notebook pulls live (not "
-        "the prediction model, which would be circular): A375 carries a strong CRISPR "
-        "BRAF dependency (~ -1.5) and GDSC2 dabrafenib AUC ~0.35, while LOXIMVI shows "
-        "GDSC2 dabrafenib ~0.76 - the BRAF-V600E addiction that intermittent dosing is "
-        "designed to exploit, measured rather than assumed. DepMap also lists "
-        "BRAFi-resistant A375 sublines (A375DABR, A375DABTRAMR) as ready-made models "
-        "for the proposed resistance experiments. The Task-1/2/3 viability numbers are "
-        "model predictions, so they illustrate the strategy's logic but are not "
-        "evidence for it."
+        "Supporting facts that are independent of the prediction model - reported by "
+        "DepMap, not produced by the model, so citing them is not circular: A375 carries "
+        "a strong CRISPR BRAF dependency (~ -1.5) and a GDSC2 dabrafenib AUC ~0.35, while "
+        "LOXIMVI's GDSC2 dabrafenib AUC is ~0.76 - the BRAF-V600E addiction that "
+        "intermittent dosing is designed to exploit, measured rather than assumed. DepMap "
+        "also lists BRAFi-resistant A375 sublines (A375DABR, A375DABTRAMR) as ready-made "
+        "models for the proposed resistance experiments. The Task-1/2/3 viability numbers, "
+        "by contrast, are model predictions - they illustrate the strategy's logic but are "
+        "not evidence for it."
     )
 
 
@@ -344,7 +622,7 @@ def task4_analyses() -> str:
 def run_submission(
     drugs: dict, floor_fn, out_dir: Path, methods_note: str, summary_desc: str, summary_numbers: dict
 ) -> pl.DataFrame:
-    """Write all 11 task outputs (+ summary.json) for one set of floors. Shared by v1/v2/v3."""
+    """Write all 11 task outputs (+ summary.json) for one set of floors."""
 
     def drugs_of(condition):
         return [c.strip() for c in condition.split("+")]
@@ -518,266 +796,6 @@ def run_submission(
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
     return pl.DataFrame({"task": done}).with_columns(pl.lit("written").alias("status"))
-
-
-@app.function
-def methods_note_v1() -> str:
-    """v1 methods preamble embedded in each reasoning.md."""
-    return (
-        "## Method (v1 - reasoning baseline)\n\n"
-        "No experimental readout was provided; these are predictions. Each drug has a per-line "
-        "**effect floor** (asymptotic % viability at its task dose, set by *judgment* anchored to "
-        "PRISM/GDSC AUC + dose-vs-IC50 margin + pathway dependence) and a **kinetic class**. "
-        "Prediction = `floor + (100-floor) * (1 - realized_fraction(t, class))`. Combinations use "
-        "Bliss across distinct pathways with a line-aware synergy factor. v2 replaces the judgment "
-        "floors with data-derived ones; v3 calibrates the dose-response to ChEMBL potency.\n\n"
-    )
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## Instrument 1 - what are these two lines addicted to?
-
-    CRISPR (Chronos) dependency and hotspot calls from DepMap. Strongly negative
-    dependency means the line dies without that gene.
-    """)
-    return
-
-
-@app.cell
-def _():
-    def _line_values(gene, dataset):
-        df = matrix_feature(dataset, gene, value_name="v")
-        m = dict(zip(df["depmap_id"].to_list(), df["v"].to_list())) if not df.is_empty() else {}
-        return {"A375": m.get(A375), "LOXIMVI": m.get(LOXIMVI)}
-
-    genetics = pl.DataFrame(
-        [
-            {"feature": "BRAF dependency (Chronos)", **_line_values("BRAF", "Chronos_Combined")},
-            {"feature": "MAP2K1 (MEK1) dependency", **_line_values("MAP2K1", "Chronos_Combined")},
-            {"feature": "BRAF hotspot mutation", **_line_values("BRAF", "mutations_hotspot")},
-        ]
-    )
-    mo.md("### Dependency & mutation: A375 vs LOXIMVI")
-    mo.ui.table(genetics, page_size=10)
-    return (genetics,)
-
-
-@app.cell
-def _(genetics):
-    def _val(feature, line):
-        return genetics.filter(pl.col("feature") == feature)[line][0]
-
-    mo.md(
-        "**Read-out (live).** A375 BRAF dependency = "
-        f"`{_val('BRAF dependency (Chronos)', 'A375')}`, MAP2K1 = "
-        f"`{_val('MAP2K1 (MEK1) dependency', 'A375')}` - a MAPK-addicted BRAF-V600E line. "
-        f"LOXIMVI BRAF dependency = `{_val('BRAF dependency (Chronos)', 'LOXIMVI')}` (absent from the "
-        "CRISPR screen). This is a textbook prior the notebook *verifies*, not a discovery; the "
-        "load-bearing evidence for sparing BRAF inhibitors in LOXIMVI is the GDSC2 drug data below."
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## Instrument 2 - empirical drug sensitivity for the actual panel
-
-    PRISM (5-day) and GDSC2 are longer assays than our 16-48 h endpoint and at their
-    own doses, so they anchor *relative* efficacy and the line-to-line contrast, not
-    the % we predict. **AUC: lower = more sensitive** (1.0 = no effect).
-    """)
-    return
-
-
-@app.cell
-def _():
-    panel_labels = [
-        "VEMURAFENIB",
-        "DABRAFENIB",
-        "ENCORAFENIB",
-        "TRAMETINIB",
-        "COBIMETINIB",
-        "BINIMETINIB",
-        "REGORAFENIB",
-        "ALPELISIB",
-        "CAPIVASERTIB",
-        "PANOBINOSTAT",
-    ]
-
-    def _auc_frame(dataset_id, label):
-        raw = bb_post(f"datasets/matrix/{dataset_id}", {"features": panel_labels, "feature_identifier": "label"})
-        rows = []
-        for drug in panel_labels:
-            v = raw.get(drug, {}) if isinstance(raw, dict) else {}
-            rows.append({"drug": drug.title(), f"{label}_A375": v.get(A375), f"{label}_LOXIMVI": v.get(LOXIMVI)})
-        return pl.DataFrame(rows)
-
-    sensitivity = _auc_frame(PRISM_SEC_AUC, "PRISM").join(_auc_frame(GDSC2_AUC, "GDSC2"), on="drug", how="left")
-    mo.md("### Drug-sensitivity AUC anchors (lower = more sensitive)")
-    mo.ui.table(sensitivity.with_columns(pl.col(pl.Float64).round(3)), page_size=12)
-    return (sensitivity,)
-
-
-@app.cell
-def _(sensitivity):
-    def _auc(drug, col):
-        v = sensitivity.filter(pl.col("drug") == drug)[col][0]
-        return "n/a" if v is None else round(v, 2)
-
-    mo.md(
-        "**Read-out (live).** GDSC2 dabrafenib: A375 "
-        f"`{_auc('Dabrafenib', 'GDSC2_A375')}` (sensitive) vs LOXIMVI "
-        f"`{_auc('Dabrafenib', 'GDSC2_LOXIMVI')}` (resistant) - the clean addiction contrast. "
-        f"PRISM panobinostat: A375 `{_auc('Panobinostat', 'PRISM_A375')}` / LOXIMVI "
-        f"`{_auc('Panobinostat', 'PRISM_LOXIMVI')}` - the single most potent agent in both lines, a "
-        "broadly cytotoxic HDAC inhibitor, not a MAPK drug. These live numbers anchor the v1 floors."
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## v1 effect floors (judgment, data-anchored)
-
-    The floors below are my curated estimates from the Instrument-2 AUCs + dose-vs-IC50
-    margin + pathway dependence. BRAF inhibitors: deep in A375, shallow in LOXIMVI.
-    PI3K/AKT: weak everywhere. Panobinostat: deep in both (cytotoxic). **v2 replaces
-    this whole table with floors read from data.**
-    """)
-    return
-
-
-@app.cell
-def _():
-    # v1 judgment floors (asymptotic % viability at task dose), per line.
-    FLOORS_V1 = {
-        "Vemurafenib": (45, 92),
-        "Dabrafenib": (28, 82),
-        "Encorafenib": (33, 82),
-        "Trametinib": (30, 60),
-        "Cobimetinib": (32, 62),
-        "Binimetinib": (38, 62),
-        "TAK-733": (36, 62),
-        "Regorafenib": (55, 58),
-        "Alpelisib": (80, 78),
-        "Capivasertib": (78, 72),
-        "Sapanisertib": (50, 52),
-        "Panobinostat": (30, 25),
-    }
-    drugs_v1 = {n: {**meta, "floorA": FLOORS_V1[n][0], "floorL": FLOORS_V1[n][1]} for n, meta in drug_panel().items()}
-
-    def floor_v1(name, line):
-        return drugs_v1[name]["floorA" if line == "A375" else "floorL"]
-
-    drug_table = pl.DataFrame(
-        [
-            {
-                "drug": n,
-                "target": p["target"],
-                "class": p["kclass"],
-                "floor_A375": p["floorA"],
-                "floor_LOXIMVI": p["floorL"],
-                "conc": p["conc"],
-            }
-            for n, p in drugs_v1.items()
-        ]
-    )
-    mo.md("### v1 drug parameter table")
-    mo.ui.table(drug_table, page_size=12)
-    return drugs_v1, floor_v1
-
-
-@app.cell
-def _(drugs_v1, floor_v1):
-    single_preview = pl.DataFrame(
-        [
-            {"cell_line": line, "timepoint_h": t, **r}
-            for line in ("A375", "LOXIMVI")
-            for t in (24, 48)
-            for r in rank_single_agents(line, t, drugs_v1, floor_v1)
-        ]
-    ).select("cell_line", "timepoint_h", "rank", "condition", "concentration", "viability_pct")
-    mo.md("### All single-agent predictions (A375/LOXIMVI x 24/48 h)")
-    mo.ui.table(single_preview.sort("cell_line", "timepoint_h", "rank"), page_size=16)
-    return (single_preview,)
-
-
-@app.cell
-def _(single_preview):
-    _chart = (
-        alt.Chart(
-            single_preview.with_columns(
-                (pl.col("cell_line") + " " + pl.col("timepoint_h").cast(pl.Utf8) + "h").alias("cond")
-            )
-        )
-        .mark_circle(size=70, opacity=0.85)
-        .encode(
-            x=alt.X("viability_pct:Q", title="predicted % viability", scale=alt.Scale(domain=[0, 105])),
-            y=alt.Y("condition:N", sort=alt.EncodingSortField("viability_pct", op="min"), title=None),
-            color=alt.Color("cond:N", title=None),
-            tooltip=["condition", "cell_line", "timepoint_h", "viability_pct"],
-        )
-        .properties(width=560, height=420, title="Lower = more effect. MAPK drugs bite A375, spare LOXIMVI.")
-    )
-    mo.ui.altair_chart(_chart)
-    return
-
-
-@app.cell
-def _(drugs_v1, floor_v1, genetics, sensitivity):
-    def _g(feature, line):
-        return genetics.filter(pl.col("feature") == feature)[line][0]
-
-    def _s(drug, col):
-        return sensitivity.filter(pl.col("drug") == drug)[col][0]
-
-    status = run_submission(
-        drugs_v1,
-        floor_v1,
-        OUT_DIR,
-        methods_note_v1(),
-        "Night Shift melanoma drug-response predictions (v1, reasoning baseline): per-condition CTG "
-        "% viability for A375 (BRAF-V600E) and LOXIMVI from judgment effect floors + a CTG-kinetics "
-        "model. Predictions, not measurements.",
-        {
-            "A375_BRAF_dependency_chronos": _g("BRAF dependency (Chronos)", "A375"),
-            "GDSC2_dabrafenib_AUC_A375": _s("Dabrafenib", "GDSC2_A375"),
-            "GDSC2_dabrafenib_AUC_LOXIMVI": _s("Dabrafenib", "GDSC2_LOXIMVI"),
-        },
-    )
-    mo.md("### v1 submission complete - 11 tasks + summary.json under data/processed/nightshift_v1/")
-    mo.ui.table(status, page_size=12)
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## What is evidence, what is assumption (v1)
-
-    - **Independent evidence (DepMap, live above):** A375 BRAF/MAP2K1 dependency; PRISM/GDSC AUCs;
-      the GDSC2 dabrafenib A375-vs-LOXIMVI contrast. These could have contradicted the prior and did not.
-    - **Assumptions (mine):** the per-line floors (judgment), the three kinetic curves, the synergy
-      constants. "BRAF+MEK doublets win in A375" is the `0.72 vs 0.95` synergy input read back out.
-
-    **Calibration.** High confidence in the *direction* of the big contrasts (MAPK inhibitors hit
-    A375 far harder than LOXIMVI; panobinostat tops both; clinical doublets are the best A375 combos).
-    Low confidence in absolute magnitudes and the fine ordering within the clustered 24 h MAPK
-    inhibitors. **Falsifier:** a real 24 h A375 readout where a BRAF/MEK inhibitor drops viability
-    below panobinostat would break the kinetics premise. v2 and v3 attack the weakest assumptions
-    (the floors, then the dose-response) with data.
-
-    ## To extend
-
-    - v2 swaps judgment floors for PRISM/GDSC dose-level viability.
-    - v3 calibrates the concentration-response with ChEMBL potency.
-    - Calibrate the kinetic curves against any one real CTG time-course.
-    """)
-    return
 
 
 if __name__ == "__main__":

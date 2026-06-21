@@ -26,7 +26,7 @@ with app.setup:
     import polars as pl
     import requests
 
-    # Self-contained standalone notebook: vendors the v1 engine + Breadbox HTTP helpers
+    # Self-contained standalone notebook: vendors the engine + Breadbox HTTP helpers
     # below, so it runs as a single gist with no sibling files.
     NOTEBOOK_DIR = Path(__file__).resolve().parent
     REPO_DIR = NOTEBOOK_DIR.parent if NOTEBOOK_DIR.name == "notebooks" else NOTEBOOK_DIR
@@ -48,7 +48,7 @@ with app.setup:
         "Alpelisib",
         "Capivasertib",
     ]
-    # v1 judgment floors (asymptotic % viability at task dose), reused only where the
+    # judgment-baseline floors (asymptotic % viability at task dose), used only where the
     # data source has no value for a drug. Kept inline so this notebook is standalone.
     FLOORS_V1 = {
         "Vemurafenib": (45, 92),
@@ -64,6 +64,259 @@ with app.setup:
         "Sapanisertib": (50, 52),
         "Panobinostat": (30, 25),
     }
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    # Night Shift submission - data-derived floors
+
+    Predict CellTiter-Glo % viability for A375 and LOXIMVI under a MAPK-inhibitor panel,
+    and rank conditions by effect. No experimental readout is provided, so these are
+    predictions.
+
+    **The result worth leading with is a falsification.** The prior coming in held LOXIMVI
+    to be BRAF-inhibitor-resistant (the CRISPR screen was silent on it, but GDSC2 dabrafenib
+    read it resistant at ~0.76). Experiment: read LOXIMVI's PRISM dose-viability for the BRAF
+    inhibitors. Observation: PRISM shows LOXIMVI *responding* to dabrafenib and encorafenib -
+    the prior is contradicted by this screen. Two independent screens now disagree (GDSC2:
+    resistant; PRISM: sensitive), and that unresolved collision - not any ranking - is the
+    real finding here. This submission takes the PRISM measurement at face value (the
+    divergence chart and the cell below quantify it); which screen is right for a 16-48 h CTG
+    plate is exactly what the eventual readout decides. The rankings downstream are then just
+    the fixed model re-run on these measured floors.
+
+    The one design choice here: each drug's **effect floor** is read straight off a real
+    screen rather than set by judgment. PRISM Repurposing Secondary stores 5-day viability
+    at each dose, so for each drug we take the viability at the dose nearest the task
+    concentration, per line, and use that as the floor (PRISM stores log2 fold-change, so
+    % viability = `100 * 2^value`). Where a drug is absent from PRISM (sapanisertib), a
+    judgment-baseline floor is used and flagged. The kinetics model and combination engine
+    are vendored unchanged in the appendix; only the floors are data-derived.
+
+    **This is not guaranteed to score better** - it trades "trust my judgment" for "trust
+    the measurement," and one real data-vs-prior tension shows up (below). This is one of a
+    small set of submissions that differ only in how the floors are produced; see the repo
+    README for the others.
+    """)
+    return
+
+
+@app.function
+def prism_dose_floors() -> dict:
+    """Effect floor per drug per line, read from PRISM Secondary dose-level viability.
+
+    For each drug, find the two dose points nearest its task concentration (log scale),
+    convert log2 fold-change to % viability (100*2^v), and average them. Returns
+    {drug: {floorA, floorL, doses}} for drugs present in PRISM; callers fall back to a
+    judgment-baseline floor for the rest.
+    """
+    panel = drug_panel()
+    feats = bb_get(f"datasets/features/{PRISM_VIAB}")
+    # Map each panel drug to its (dose_uM, feature_label) points.
+    by_drug: dict[str, list] = {}
+    for f in feats:
+        label = str(f.get("label", ""))
+        m = re.match(r"^([A-Za-z0-9-]+)\s+([\d.]+)\s*uM$", label)
+        if not m:
+            continue
+        drug, dose = m.group(1).upper(), float(m.group(2))
+        by_drug.setdefault(drug, []).append((dose, label))
+
+    # Pick the two nearest dose labels per drug; query them all in one matrix POST.
+    chosen: dict[str, list] = {}
+    wanted = []
+    for name, meta in panel.items():
+        conc_uM = meta["conc_nM"] / 1000.0
+        points = by_drug.get(name.upper())
+        if not points:
+            continue
+        nearest = sorted(points, key=lambda x: abs(math.log10(x[0]) - math.log10(conc_uM)))[:2]
+        chosen[name] = nearest
+        wanted.extend(lbl for _, lbl in nearest)
+
+    raw = bb_post(f"datasets/matrix/{PRISM_VIAB}", {"features": wanted, "feature_identifier": "label"})
+
+    def viab(label, line_id):
+        # log2 fold-change -> % viability. Keep values >100 (growth / paradoxical
+        # activation) instead of clamping them away - that >100 signal is exactly
+        # what flags a drug as inactive-or-worse in a line; only cap the floor at 2.
+        v = raw.get(label, {}).get(line_id) if isinstance(raw, dict) else None
+        return None if v is None else max(2.0, 100.0 * (2.0**v))
+
+    floors = {}
+    for name, nearest in chosen.items():
+        a = [x for x in (viab(lbl, A375) for _, lbl in nearest) if x is not None]
+        lox = [x for x in (viab(lbl, LOXIMVI) for _, lbl in nearest) if x is not None]
+        if not a or not lox:
+            continue
+        doses = [d for d, _ in nearest]
+        floors[name] = {
+            "floorA": round(sum(a) / len(a), 1),
+            "floorL": round(sum(lox) / len(lox), 1),
+            "dose_uM": math.prod(doses) ** (1.0 / len(doses)),  # geomean dose the floor was read at
+            "doses": " / ".join(f"{d:g}uM" for d in doses),
+        }
+    return floors
+
+
+@app.cell
+def _():
+    prism = prism_dose_floors()
+
+    def floor_v2(name, line):
+        idx = "floorA" if line == "A375" else "floorL"
+        if name in prism:
+            return prism[name][idx]
+        return FLOORS_V1[name][0 if line == "A375" else 1]  # absent from PRISM -> judgment baseline
+
+    drugs_v2 = {
+        n: {**meta, "floorA": floor_v2(n, "A375"), "floorL": floor_v2(n, "LOXIMVI")} for n, meta in drug_panel().items()
+    }
+
+    compare = pl.DataFrame(
+        [
+            {
+                "drug": n,
+                "source": "PRISM" if n in prism else "judgment",
+                "doses": prism.get(n, {}).get("doses", "-"),
+                "floor_A375_data": floor_v2(n, "A375"),
+                "floor_A375_judgment": FLOORS_V1[n][0],
+                "floor_LOX_data": floor_v2(n, "LOXIMVI"),
+                "floor_LOX_judgment": FLOORS_V1[n][1],
+            }
+            for n in drug_panel()
+        ]
+    )
+    mo.md("### Data-derived floors vs the judgment baseline")
+    mo.ui.table(compare, page_size=12)
+    return compare, drugs_v2, floor_v2, prism
+
+
+@app.cell
+def _(compare):
+    # Where do data and judgment disagree most? (signed delta, A375 + LOXIMVI)
+    div = (
+        compare.with_columns(
+            (pl.col("floor_A375_data") - pl.col("floor_A375_judgment")).alias("dA375"),
+            (pl.col("floor_LOX_data") - pl.col("floor_LOX_judgment")).alias("dLOX"),
+        )
+        .select("drug", "dA375", "dLOX")
+        .unpivot(index="drug", variable_name="line", value_name="delta")
+    )
+    _chart = (
+        alt.Chart(div)
+        .mark_bar()
+        .encode(
+            x=alt.X("delta:Q", title="data floor - judgment floor (negative = data says MORE killing)"),
+            y=alt.Y("drug:N", sort="-x", title=None),
+            color=alt.Color("line:N", title=None),
+            tooltip=["drug", "line", "delta"],
+        )
+        .properties(width=560, height=420, title="Where PRISM data diverges from the judgment baseline")
+    )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    **The tension worth naming.** For A375 the PRISM floors track the judgment baseline
+    closely (dabrafenib ~25 vs ~28) - which is reassuring but *expected*, not a discovery:
+    the addicted line's BRAFi sensitivity is the one fact everyone, the prior included,
+    already agreed on. The informative result is the **divergence in LOXIMVI BRAF
+    inhibitors**: PRISM's fixed-dose 5-day viability shows LOXIMVI responding to
+    dabrafenib/encorafenib, where a BRAF-WT prior expected near-vehicle (the Instrument-2
+    GDSC2 pull, a longer assay, also read LOXIMVI as resistant). This submission takes the
+    measurement as given rather than re-imposing the prior; that is exactly where data and
+    judgment will disagree on the eventual CTG readout, and it is the honest cost of
+    data-grounding a single screen with its own off-target / fixed-dose artifacts.
+
+    One caveat to keep in view: only the *floor input* changed here. The kinetics + Bliss/
+    synergy engine (vendored below) is held fixed, so this is not an independent test of the
+    model - it is the same model on measured floors. The real 24-48 h CTG data is what
+    actually adjudicates.
+    """)
+    return
+
+
+@app.function
+def methods_note_v2() -> str:
+    """v2 methods preamble embedded in each reasoning.md."""
+    return (
+        "## Method (data-derived floors)\n\n"
+        "Predictions, not measurements. A fixed CTG-kinetics + Bliss/pathway-combination "
+        "engine (vendored in the notebook appendix), but each drug's per-line **effect "
+        "floor** is read from PRISM Repurposing Secondary dose-level viability at the dose "
+        "nearest the task concentration (% viability = 100*2^log2fc, averaged over the two "
+        "nearest doses) instead of by judgment. Drugs absent from PRISM (sapanisertib) keep "
+        "a judgment-baseline floor. The kinetic curves and synergy constants are held "
+        "fixed - only the floors are data-derived.\n\n"
+    )
+
+
+@app.cell
+def _(drugs_v2, floor_v2, prism):
+    n_prism = sum(1 for n in drug_panel() if n in prism)
+    status = run_submission(
+        drugs_v2,
+        floor_v2,
+        OUT_DIR,
+        methods_note_v2(),
+        "Night Shift melanoma drug-response predictions (v2, data-derived floors): per-condition CTG "
+        "% viability for A375 and LOXIMVI, floors read from PRISM Secondary dose-level viability at "
+        "the task dose. Predictions, not measurements.",
+        {"drugs_with_prism_floors": n_prism, "drugs_judgment_fallback": 12 - n_prism},
+    )
+    mo.md("### v2 submission complete - 11 tasks + summary.json under data/processed/nightshift_v2/")
+    mo.ui.table(status, page_size=12)
+    return
+
+
+@app.cell
+def _(drugs_v2, floor_v2):
+    # Quick look: does the data-floor change any single-agent ranking vs the judgment baseline?
+    preview = pl.DataFrame(
+        [
+            {"cell_line": line, "timepoint_h": t, **r}
+            for line in ("A375", "LOXIMVI")
+            for t in (24, 48)
+            for r in rank_single_agents(line, t, drugs_v2, floor_v2)
+        ]
+    ).select("cell_line", "timepoint_h", "rank", "condition", "viability_pct")
+    mo.md("### v2 single-agent predictions")
+    mo.ui.table(preview.sort("cell_line", "timepoint_h", "rank"), page_size=16)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ## To extend
+
+    - Calibrate the concentration-response with measured potency (e.g. ChEMBL IC50), so the
+      floor reflects whether the task dose is actually saturating.
+    - Average PRISM with GDSC2 dose-level viability to damp single-screen noise.
+    - Use the real 24-48 h CTG readout (when released) to adjudicate the LOXIMVI-BRAFi
+      tension between the prior and the data.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ---
+    ## Vendored engine (appendix)
+
+    Below is the shared, notebook-agnostic machinery this submission reuses: the
+    Breadbox HTTP helpers, the drug panel, the CTG-kinetics + Bliss/synergy model,
+    and the task-runner. It is vendored inline (rather than imported) so this file
+    runs as a single standalone gist. The science specific to this submission is all
+    above; this section is boilerplate you can collapse.
+    """)
+    return
 
 
 @app.function
@@ -97,7 +350,7 @@ def bb_post(endpoint: str, body: dict) -> object:
 
 @app.function
 def drug_panel() -> dict:
-    """Per-drug mechanism metadata shared across all three submissions (no floors).
+    """Per-drug mechanism metadata: the assay-fixed part of the panel (no floors).
 
     Floors are what each submission produces differently; everything else - target,
     kinetic class, fraction of effect retained at 1/3 dose, task concentration - is
@@ -293,17 +546,17 @@ def task4_response() -> str:
 
 @app.function
 def task4_analyses() -> str:
-    """Task 4.1 'analyses' field - cites independent DepMap data, not the prediction model."""
+    """Task 4.1 'analyses' field - cites published DepMap facts, not the prediction model."""
     return (
-        "Support here is the *independent* DepMap data this notebook pulls live (not "
-        "the prediction model, which would be circular): A375 carries a strong CRISPR "
-        "BRAF dependency (~ -1.5) and GDSC2 dabrafenib AUC ~0.35, while LOXIMVI shows "
-        "GDSC2 dabrafenib ~0.76 - the BRAF-V600E addiction that intermittent dosing is "
-        "designed to exploit, measured rather than assumed. DepMap also lists "
-        "BRAFi-resistant A375 sublines (A375DABR, A375DABTRAMR) as ready-made models "
-        "for the proposed resistance experiments. The Task-1/2/3 viability numbers are "
-        "model predictions, so they illustrate the strategy's logic but are not "
-        "evidence for it."
+        "Supporting facts that are independent of the prediction model - reported by "
+        "DepMap, not produced by the model, so citing them is not circular: A375 carries "
+        "a strong CRISPR BRAF dependency (~ -1.5) and a GDSC2 dabrafenib AUC ~0.35, while "
+        "LOXIMVI's GDSC2 dabrafenib AUC is ~0.76 - the BRAF-V600E addiction that "
+        "intermittent dosing is designed to exploit, measured rather than assumed. DepMap "
+        "also lists BRAFi-resistant A375 sublines (A375DABR, A375DABTRAMR) as ready-made "
+        "models for the proposed resistance experiments. The Task-1/2/3 viability numbers, "
+        "by contrast, are model predictions - they illustrate the strategy's logic but are "
+        "not evidence for it."
     )
 
 
@@ -311,7 +564,7 @@ def task4_analyses() -> str:
 def run_submission(
     drugs: dict, floor_fn, out_dir: Path, methods_note: str, summary_desc: str, summary_numbers: dict
 ) -> pl.DataFrame:
-    """Write all 11 task outputs (+ summary.json) for one set of floors. Shared by v1/v2/v3."""
+    """Write all 11 task outputs (+ summary.json) for one set of floors."""
 
     def drugs_of(condition):
         return [c.strip() for c in condition.split("+")]
@@ -485,229 +738,6 @@ def run_submission(
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
     return pl.DataFrame({"task": done}).with_columns(pl.lit("written").alias("status"))
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    # Night Shift submission v2 - data-derived floors
-
-    Builds on **v1** (`nightshift_v1_reasoning.py`) by deleting its biggest assumption.
-    v1 set each drug's effect floor by *judgment*; v2 reads the floor straight off a
-    real screen: PRISM Repurposing Secondary stores 5-day viability at each dose, so for
-    each drug we take the viability at the dose nearest the task concentration, per line,
-    and use that as the floor. Everything downstream - the CTG-kinetics model, the
-    combination engine, the task orchestration - is imported unchanged from v1; only the
-    floors change.
-
-    PRISM stores log2 fold-change vs control, so % viability = `100 * 2^value`. Where a
-    drug is absent from PRISM (sapanisertib), v2 falls back to the v1 judgment floor and
-    says so. **This is not guaranteed to score better** - it trades "trust my judgment"
-    for "trust the measurement," and one real tension shows up (below).
-    """)
-    return
-
-
-@app.function
-def prism_dose_floors() -> dict:
-    """Effect floor per drug per line, read from PRISM Secondary dose-level viability.
-
-    For each drug, find the two dose points nearest its task concentration (log scale),
-    convert log2 fold-change to % viability (100*2^v), and average them. Returns
-    {drug: {floorA, floorL, doses}} for drugs present in PRISM; callers fall back to the
-    v1 judgment floor for the rest. Used by both this notebook and v3.
-    """
-    panel = drug_panel()
-    feats = bb_get(f"datasets/features/{PRISM_VIAB}")
-    # Map each panel drug to its (dose_uM, feature_label) points.
-    by_drug: dict[str, list] = {}
-    for f in feats:
-        label = str(f.get("label", ""))
-        m = re.match(r"^([A-Za-z0-9-]+)\s+([\d.]+)\s*uM$", label)
-        if not m:
-            continue
-        drug, dose = m.group(1).upper(), float(m.group(2))
-        by_drug.setdefault(drug, []).append((dose, label))
-
-    # Pick the two nearest dose labels per drug; query them all in one matrix POST.
-    chosen: dict[str, list] = {}
-    wanted = []
-    for name, meta in panel.items():
-        conc_uM = meta["conc_nM"] / 1000.0
-        points = by_drug.get(name.upper())
-        if not points:
-            continue
-        nearest = sorted(points, key=lambda x: abs(math.log10(x[0]) - math.log10(conc_uM)))[:2]
-        chosen[name] = nearest
-        wanted.extend(lbl for _, lbl in nearest)
-
-    raw = bb_post(f"datasets/matrix/{PRISM_VIAB}", {"features": wanted, "feature_identifier": "label"})
-
-    def viab(label, line_id):
-        # log2 fold-change -> % viability. Keep values >100 (growth / paradoxical
-        # activation) instead of clamping them away - that >100 signal is exactly
-        # what flags a drug as inactive-or-worse in a line; only cap the floor at 2.
-        v = raw.get(label, {}).get(line_id) if isinstance(raw, dict) else None
-        return None if v is None else max(2.0, 100.0 * (2.0**v))
-
-    floors = {}
-    for name, nearest in chosen.items():
-        a = [x for x in (viab(lbl, A375) for _, lbl in nearest) if x is not None]
-        lox = [x for x in (viab(lbl, LOXIMVI) for _, lbl in nearest) if x is not None]
-        if not a or not lox:
-            continue
-        doses = [d for d, _ in nearest]
-        floors[name] = {
-            "floorA": round(sum(a) / len(a), 1),
-            "floorL": round(sum(lox) / len(lox), 1),
-            "dose_uM": math.prod(doses) ** (1.0 / len(doses)),  # geomean dose the floor was read at
-            "doses": " / ".join(f"{d:g}uM" for d in doses),
-        }
-    return floors
-
-
-@app.cell
-def _():
-    prism = prism_dose_floors()
-
-    def floor_v2(name, line):
-        idx = "floorA" if line == "A375" else "floorL"
-        if name in prism:
-            return prism[name][idx]
-        return FLOORS_V1[name][0 if line == "A375" else 1]  # absent from PRISM -> v1 fallback
-
-    drugs_v2 = {
-        n: {**meta, "floorA": floor_v2(n, "A375"), "floorL": floor_v2(n, "LOXIMVI")} for n, meta in drug_panel().items()
-    }
-
-    compare = pl.DataFrame(
-        [
-            {
-                "drug": n,
-                "source": "PRISM" if n in prism else "v1 fallback",
-                "doses": prism.get(n, {}).get("doses", "-"),
-                "floor_A375_v2": floor_v2(n, "A375"),
-                "floor_A375_v1": FLOORS_V1[n][0],
-                "floor_LOX_v2": floor_v2(n, "LOXIMVI"),
-                "floor_LOX_v1": FLOORS_V1[n][1],
-            }
-            for n in drug_panel()
-        ]
-    )
-    mo.md("### v2 data-derived floors vs v1 judgment floors")
-    mo.ui.table(compare, page_size=12)
-    return compare, drugs_v2, floor_v2, prism
-
-
-@app.cell
-def _(compare):
-    # Where do data and judgment disagree most? (signed delta, A375 + LOXIMVI)
-    div = (
-        compare.with_columns(
-            (pl.col("floor_A375_v2") - pl.col("floor_A375_v1")).alias("dA375"),
-            (pl.col("floor_LOX_v2") - pl.col("floor_LOX_v1")).alias("dLOX"),
-        )
-        .select("drug", "dA375", "dLOX")
-        .unpivot(index="drug", variable_name="line", value_name="delta")
-    )
-    _chart = (
-        alt.Chart(div)
-        .mark_bar()
-        .encode(
-            x=alt.X("delta:Q", title="v2 floor - v1 floor (negative = data says MORE killing)"),
-            y=alt.Y("drug:N", sort="-x", title=None),
-            color=alt.Color("line:N", title=None),
-            tooltip=["drug", "line", "delta"],
-        )
-        .properties(width=560, height=420, title="Where PRISM data diverges from v1 judgment")
-    )
-    mo.ui.altair_chart(_chart)
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    **The tension worth naming.** For A375 the PRISM floors track v1's judgment closely
-    (dabrafenib ~25 vs v1 28) - which is reassuring but *expected*, not a discovery: the
-    addicted line's BRAFi sensitivity is the one fact everyone, including v1's prior,
-    already agreed on. The informative result is the **divergence in LOXIMVI BRAF
-    inhibitors**: PRISM's fixed-dose 5-day viability shows LOXIMVI responding to
-    dabrafenib/encorafenib, where v1's BRAF-WT prior expected near-vehicle (v1's
-    Instrument-2 GDSC2 pull, a longer assay, also read LOXIMVI as resistant). v2 takes the
-    measurement as given rather than re-imposing the prior; this is exactly where v1 and v2
-    will disagree on the eventual CTG readout, and it is the honest cost of data-grounding a
-    single screen with its own off-target / fixed-dose artifacts.
-
-    One caveat to keep in view: only the *floor input* changed here. The kinetics + Bliss/
-    synergy engine is v1's, unchanged, so v2 is not an independent test of the model - it is
-    the same model on measured floors. v3 refines the dose-response, not the assay; the real
-    24-48 h CTG data is what actually adjudicates.
-    """)
-    return
-
-
-@app.function
-def methods_note_v2() -> str:
-    """v2 methods preamble embedded in each reasoning.md."""
-    return (
-        "## Method (v2 - data-derived floors)\n\n"
-        "Predictions, not measurements. Same engine as v1 (CTG-kinetics model + Bliss/"
-        "pathway combinations), but each drug's per-line **effect floor** is read from "
-        "PRISM Repurposing Secondary dose-level viability at the dose nearest the task "
-        "concentration (% viability = 100*2^log2fc, averaged over the two nearest doses), "
-        "instead of v1's judgment. Drugs absent from PRISM (sapanisertib) keep the v1 "
-        "floor. The kinetic curves and synergy constants are unchanged from v1; v3 "
-        "calibrates the dose-response to ChEMBL potency.\n\n"
-    )
-
-
-@app.cell
-def _(drugs_v2, floor_v2, prism):
-    n_prism = sum(1 for n in drug_panel() if n in prism)
-    status = run_submission(
-        drugs_v2,
-        floor_v2,
-        OUT_DIR,
-        methods_note_v2(),
-        "Night Shift melanoma drug-response predictions (v2, data-derived floors): per-condition CTG "
-        "% viability for A375 and LOXIMVI, floors read from PRISM Secondary dose-level viability at "
-        "the task dose. Predictions, not measurements.",
-        {"drugs_with_prism_floors": n_prism, "drugs_v1_fallback": 12 - n_prism},
-    )
-    mo.md("### v2 submission complete - 11 tasks + summary.json under data/processed/nightshift_v2/")
-    mo.ui.table(status, page_size=12)
-    return
-
-
-@app.cell
-def _(drugs_v2, floor_v2):
-    # Quick look: does the data-floor change any single-agent ranking vs v1's story?
-    preview = pl.DataFrame(
-        [
-            {"cell_line": line, "timepoint_h": t, **r}
-            for line in ("A375", "LOXIMVI")
-            for t in (24, 48)
-            for r in rank_single_agents(line, t, drugs_v2, floor_v2)
-        ]
-    ).select("cell_line", "timepoint_h", "rank", "condition", "viability_pct")
-    mo.md("### v2 single-agent predictions")
-    mo.ui.table(preview.sort("cell_line", "timepoint_h", "rank"), page_size=16)
-    return
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ## To extend
-
-    - v3 calibrates the concentration-response with ChEMBL potency, so the floor reflects
-      whether the task dose is actually saturating.
-    - Average PRISM with GDSC2 dose-level viability to damp single-screen noise.
-    - Use the real 24-48 h CTG readout (when released) to adjudicate the LOXIMVI-BRAFi
-      tension between v1's prior and v2's data.
-    """)
-    return
 
 
 if __name__ == "__main__":
