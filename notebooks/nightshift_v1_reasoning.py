@@ -795,16 +795,23 @@ def run_submission(
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
     # Read back exactly what was written so the notebook can show the precise bytes
-    # that get submitted (output.json per task), not a summary of them.
-    return {t: json.loads((out_dir / t / "output.json").read_text()) for t in done}
+    # submitted - both the output.json and the reasoning.md - per task.
+    return {
+        t: {
+            "output": json.loads((out_dir / t / "output.json").read_text()),
+            "reasoning": (out_dir / t / "reasoning.md").read_text(),
+        }
+        for t in done
+    }
 
 
 @app.function
 def submission_view(payloads: dict):
-    """Render the exact populated output.json for every task inline - the same bytes
-    written to disk and submitted to the benchmark - as a scan table plus raw JSON per task."""
+    """Render exactly what gets submitted, inline: a scan table of every prediction, plus
+    per task the reasoning trace (reasoning.md) and the exact output.json bytes."""
     rows = []
-    for tid, p in payloads.items():
+    for tid, pp in payloads.items():
+        p = pp["output"]
         if "rankings" in p:
             for r in p["rankings"]:
                 rows.append(
@@ -840,18 +847,22 @@ def submission_view(payloads: dict):
                     "viability_pct": None,
                 }
             )
-    raw = mo.accordion(
-        {
-            f"Task {tid} - exact output.json": mo.md("```json\n" + json.dumps(p, indent=2) + "\n```")
-            for tid, p in payloads.items()
-        }
-    )
+    panels = {
+        f"Task {tid}": mo.vstack(
+            [
+                mo.md(pp["reasoning"]),
+                mo.md("**Exact output.json submitted:**"),
+                mo.md("```json\n" + json.dumps(pp["output"], indent=2) + "\n```"),
+            ]
+        )
+        for tid, pp in payloads.items()
+    }
     return mo.vstack(
         [
-            mo.md("### Exactly what gets submitted (populated output.json, one row per condition)"),
+            mo.md("### Exactly what gets submitted (predictions + reasoning, per task)"),
             mo.ui.table(pl.DataFrame(rows), page_size=25),
-            mo.md("#### Raw payload per task (the bytes submitted - expand any task)"),
-            raw,
+            mo.md("#### Per task: reasoning trace, then exact payload (expand any task)"),
+            mo.accordion(panels),
         ]
     )
 

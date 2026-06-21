@@ -34,6 +34,7 @@ with app.setup:
     BREADBOX = "https://depmap.org/portal/breadbox"
     KARMAN = "https://mcp.karmanai.org"
     PRISM_VIAB = "576e1cb6-ac8d-4e29-bf15-0552c8665d72"
+    GDSC2_AUC = "2eac8e7b-beb4-48c1-b78f-c226723e54d7"  # second screen, pulled live for the collision
     A375 = "ACH-000219"
     LOXIMVI = "ACH-000750"
     CANDIDATES = [
@@ -75,16 +76,17 @@ def _():
     and rank conditions by effect. No experimental readout is provided, so these are
     predictions.
 
-    **The result worth leading with is a falsification.** The prior coming in held LOXIMVI
-    to be BRAF-inhibitor-resistant (the CRISPR screen was silent on it, but GDSC2 dabrafenib
-    read it resistant at ~0.76). Experiment: read LOXIMVI's PRISM dose-viability for the BRAF
-    inhibitors. Observation: PRISM shows LOXIMVI *responding* to dabrafenib and encorafenib -
-    the prior is contradicted by this screen. Two independent screens now disagree (GDSC2:
-    resistant; PRISM: sensitive), and that unresolved collision - not any ranking - is the
-    real finding here. This submission takes the PRISM measurement at face value (the
-    divergence chart and the cell below quantify it); which screen is right for a 16-48 h CTG
-    plate is exactly what the eventual readout decides. The rankings downstream are then just
-    the fixed model re-run on these measured floors.
+    **The result worth leading with is a falsification.** The prior coming in held LOXIMVI to
+    be BRAF-inhibitor-resistant (the CRISPR screen was silent on it; a long-assay drug screen,
+    GDSC2, read it resistant). Experiment: read LOXIMVI's PRISM dose-viability for the BRAF
+    inhibitors, and pull the GDSC2 numbers alongside it so both sides of the prior are live in
+    this notebook. Observation: the two screens disagree *in direction* - GDSC2 reads LOXIMVI
+    dabrafenib-resistant while PRISM reads it responding. Both are multi-day assays and neither
+    is the 16-48 h CTG endpoint we predict, so this is a directional collision, not a
+    calibrated number; the live "collision" cell below shows both. That unresolved disagreement
+    - not any ranking - is the real finding. This submission then takes the PRISM measurement
+    as its floor; which screen is right for a CTG plate is what the eventual readout decides,
+    and the rankings downstream are just the fixed model re-run on these measured floors.
 
     The one design choice here: each drug's **effect floor** is read straight off a real
     screen rather than set by judgment. PRISM Repurposing Secondary stores 5-day viability
@@ -191,6 +193,36 @@ def _():
     mo.md("### Data-derived floors vs the judgment baseline")
     mo.ui.table(compare, page_size=12)
     return compare, drugs_v2, floor_v2, prism
+
+
+@app.cell
+def _(prism):
+    # The leading falsification, both sides pulled live. GDSC2 (a multi-day screen) read
+    # LOXIMVI as BRAF-inhibitor-RESISTANT (high AUC); PRISM (also multi-day, different design)
+    # reads it RESPONDING (low % viability at the task dose). A directional disagreement, not a
+    # number match - both are long assays, neither is the 16-48 h CTG endpoint we predict.
+    gdsc = bb_post(
+        f"datasets/matrix/{GDSC2_AUC}", {"features": ["DABRAFENIB", "ENCORAFENIB"], "feature_identifier": "label"}
+    )
+
+    def _g(drug, line):
+        v = gdsc.get(drug, {}).get(line) if isinstance(gdsc, dict) else None
+        return None if v is None else round(v, 2)
+
+    collision = pl.DataFrame(
+        [
+            {
+                "BRAF inhibitor": d.title(),
+                "GDSC2 AUC LOXIMVI (high = resistant)": _g(d, LOXIMVI),
+                "GDSC2 AUC A375 (low = sensitive)": _g(d, A375),
+                "PRISM floor LOXIMVI % (low = responding)": prism.get(d.title(), {}).get("floorL"),
+            }
+            for d in ("DABRAFENIB", "ENCORAFENIB")
+        ]
+    )
+    mo.md("### The collision, both sides pulled live (GDSC2 says resistant, PRISM says responding)")
+    mo.ui.table(collision, page_size=4)
+    return
 
 
 @app.cell
@@ -737,16 +769,23 @@ def run_submission(
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
     # Read back exactly what was written so the notebook can show the precise bytes
-    # that get submitted (output.json per task), not a summary of them.
-    return {t: json.loads((out_dir / t / "output.json").read_text()) for t in done}
+    # submitted - both the output.json and the reasoning.md - per task.
+    return {
+        t: {
+            "output": json.loads((out_dir / t / "output.json").read_text()),
+            "reasoning": (out_dir / t / "reasoning.md").read_text(),
+        }
+        for t in done
+    }
 
 
 @app.function
 def submission_view(payloads: dict):
-    """Render the exact populated output.json for every task inline - the same bytes
-    written to disk and submitted to the benchmark - as a scan table plus raw JSON per task."""
+    """Render exactly what gets submitted, inline: a scan table of every prediction, plus
+    per task the reasoning trace (reasoning.md) and the exact output.json bytes."""
     rows = []
-    for tid, p in payloads.items():
+    for tid, pp in payloads.items():
+        p = pp["output"]
         if "rankings" in p:
             for r in p["rankings"]:
                 rows.append(
@@ -782,18 +821,22 @@ def submission_view(payloads: dict):
                     "viability_pct": None,
                 }
             )
-    raw = mo.accordion(
-        {
-            f"Task {tid} - exact output.json": mo.md("```json\n" + json.dumps(p, indent=2) + "\n```")
-            for tid, p in payloads.items()
-        }
-    )
+    panels = {
+        f"Task {tid}": mo.vstack(
+            [
+                mo.md(pp["reasoning"]),
+                mo.md("**Exact output.json submitted:**"),
+                mo.md("```json\n" + json.dumps(pp["output"], indent=2) + "\n```"),
+            ]
+        )
+        for tid, pp in payloads.items()
+    }
     return mo.vstack(
         [
-            mo.md("### Exactly what gets submitted (populated output.json, one row per condition)"),
+            mo.md("### Exactly what gets submitted (predictions + reasoning, per task)"),
             mo.ui.table(pl.DataFrame(rows), page_size=25),
-            mo.md("#### Raw payload per task (the bytes submitted - expand any task)"),
-            raw,
+            mo.md("#### Per task: reasoning trace, then exact payload (expand any task)"),
+            mo.accordion(panels),
         ]
     )
 
