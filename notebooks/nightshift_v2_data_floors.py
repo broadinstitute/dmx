@@ -259,7 +259,7 @@ def methods_note_v2() -> str:
 @app.cell
 def _(drugs_v2, floor_v2, prism):
     n_prism = sum(1 for n in drug_panel() if n in prism)
-    status = run_submission(
+    payloads = run_submission(
         drugs_v2,
         floor_v2,
         OUT_DIR,
@@ -269,8 +269,7 @@ def _(drugs_v2, floor_v2, prism):
         "the task dose. Predictions, not measurements.",
         {"drugs_with_prism_floors": n_prism, "drugs_judgment_fallback": 12 - n_prism},
     )
-    mo.md("### v2 submission complete - 11 tasks + summary.json under data/processed/nightshift_v2/")
-    mo.ui.table(status, page_size=12)
+    submission_view(payloads)
     return
 
 
@@ -737,7 +736,66 @@ def run_submission(
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
 
-    return pl.DataFrame({"task": done}).with_columns(pl.lit("written").alias("status"))
+    # Read back exactly what was written so the notebook can show the precise bytes
+    # that get submitted (output.json per task), not a summary of them.
+    return {t: json.loads((out_dir / t / "output.json").read_text()) for t in done}
+
+
+@app.function
+def submission_view(payloads: dict):
+    """Render the exact populated output.json for every task inline - the same bytes
+    written to disk and submitted to the benchmark - as a scan table plus raw JSON per task."""
+    rows = []
+    for tid, p in payloads.items():
+        if "rankings" in p:
+            for r in p["rankings"]:
+                rows.append(
+                    {
+                        "task": tid,
+                        "condition": r["condition"],
+                        "cell_line": str(r.get("cell_line", p.get("cell_line") or "")),
+                        "timepoint_h": str(r.get("timepoint_h", p.get("timepoint_h") or "")),
+                        "rank": r["rank"],
+                        "viability_pct": r["viability_pct"],
+                    }
+                )
+        elif "nomination" in p:
+            n = p["nomination"]
+            rows.append(
+                {
+                    "task": tid,
+                    "condition": " + ".join(n["drugs"]),
+                    "cell_line": str(p.get("cell_line") or ""),
+                    "timepoint_h": str(p.get("timepoint_h") or ""),
+                    "rank": 1,
+                    "viability_pct": n["viability_pct"],
+                }
+            )
+        else:  # 4.1 free-text strategy
+            rows.append(
+                {
+                    "task": tid,
+                    "condition": "(free-text strategy)",
+                    "cell_line": "",
+                    "timepoint_h": "",
+                    "rank": None,
+                    "viability_pct": None,
+                }
+            )
+    raw = mo.accordion(
+        {
+            f"Task {tid} - exact output.json": mo.md("```json\n" + json.dumps(p, indent=2) + "\n```")
+            for tid, p in payloads.items()
+        }
+    )
+    return mo.vstack(
+        [
+            mo.md("### Exactly what gets submitted (populated output.json, one row per condition)"),
+            mo.ui.table(pl.DataFrame(rows), page_size=25),
+            mo.md("#### Raw payload per task (the bytes submitted - expand any task)"),
+            raw,
+        ]
+    )
 
 
 if __name__ == "__main__":
