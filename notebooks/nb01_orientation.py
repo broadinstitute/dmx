@@ -12,6 +12,8 @@ __generated_with = "0.23.10"
 app = marimo.App(width="medium")
 
 with app.setup:
+    import re
+
     import marimo as mo
     import requests
 
@@ -23,6 +25,12 @@ with app.setup:
     BASE_URL = "https://depmap.org/portal/breadbox"
     REQUEST_TIMEOUT = 60
     USER_AGENT = "dmx/0.1 (+https://github.com/broadinstitute/dmx)"
+
+    # DepMap ships quarterly; Breadbox serves whichever release is current and cannot
+    # be asked for an old one, so this is a documentary pin: the release this catalog
+    # was built against. Kept in sync with catalog.toml [data].version; the release
+    # cell below checks it against the live portal and warns on drift.
+    DEPMAP_RELEASE = "26Q1"
 
 
 @app.cell(hide_code=True)
@@ -96,6 +104,55 @@ def reach_surface() -> list[dict]:
     )
     response.raise_for_status()
     return response.json()
+
+
+@app.function
+def live_release() -> str | None:
+    """Read the DepMap release the portal currently serves, from the CRISPR dataset name.
+
+    Breadbox names the dependency dataset e.g. 'CRISPR (DepMap Public 26Q1+Score, Chronos)';
+    the release is the only version handle this REST surface exposes. Returns e.g. '26Q1',
+    or None if the dataset or a release token is not found.
+    """
+    response = requests.get(
+        f"{BASE_URL}/datasets/",
+        headers={"Accept": "application/json", "User-Agent": USER_AGENT},
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    for dataset in response.json():
+        if dataset.get("given_id") == "Chronos_Combined":
+            match = re.search(r"2\dQ\d", str(dataset.get("name", "")))
+            return match.group(0) if match else None
+    return None
+
+
+@app.cell
+def _():
+    _live = live_release()
+    if _live == DEPMAP_RELEASE:
+        _status = f"Live portal serves **{_live}**, matching the pin."
+    elif _live is None:
+        _status = f"Could not read the live release, so the **{DEPMAP_RELEASE}** pin is unconfirmed."
+    else:
+        _status = (
+            f"**Release drift:** built against **{DEPMAP_RELEASE}**, but the live portal now serves "
+            f"**{_live}**. A fresh run re-anchors every number to {_live}; the committed outputs "
+            f"reflect {DEPMAP_RELEASE}. Bump `catalog.toml` `[data].version` and `DEPMAP_RELEASE` deliberately."
+        )
+    mo.md(
+        f"""
+        ## DepMap release
+
+        Built against **DepMap Public {DEPMAP_RELEASE}** (the CRISPR / `Chronos_Combined` dependency
+        data; some Omics tables lag a quarter). Breadbox serves whichever release is current and
+        cannot be pinned in the request, so the release is recorded in `catalog.toml` `[data].version`
+        and checked here rather than left to a reader's assumption.
+
+        {_status}
+        """
+    )
+    return
 
 
 @app.cell
