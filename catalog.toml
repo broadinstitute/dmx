@@ -3,6 +3,9 @@ description = "DepMap eXplore - agent-composable marimo notebooks over DepMap's 
 
 [data]
 surface = "rest"   # rest | duckdb | pooch | files
+version = "26Q1"   # DepMap release the catalog was built against (CRISPR/Chronos_Combined dependency data).
+                   # Breadbox serves the current release and can't be asked for an old one; nb01 checks this
+                   # pin against the live portal and warns on drift. Some Omics tables lag at 24Q4/24Q2.
 cache = ""         # public read-only reads, fetched fresh; no cache
 
 [auth]
