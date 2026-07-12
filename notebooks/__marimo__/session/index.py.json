@@ -1,0 +1,113 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.14",
+    "script_metadata_hash": "a32a8b53cd1a2588b039a54a58beb649"
+  },
+  "cells": [
+    {
+      "id": "setup",
+      "code_hash": "73afbbe948fe66455166e5e218ac03d7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hbol",
+      "code_hash": "da4dd3c3f051fec82ea090abe1eca4ea",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "a3549bb3487769968d89948967c4f4eb",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "75ea499ebe04a4f8b60c0e89e38ece40",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "923425c435ee71a99169bdb794ec28a8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"catalog-index\">Catalog index</h1>\n<span class=\"paragraph\">Every <code>data/processed/**/summary.json</code> envelope this catalog has produced, one block\neach: its description, the numbers behind it, and the files it wrote. The index reads\neach number from the node that canonically produced it and computes nothing of its own.</span>\n<span class=\"paragraph\">Dual-mode: in a checkout it discovers via the repo and writes <code>data/processed/index.{json,csv}</code>;\nstandalone (molab) it globs whatever <code>data/processed/</code> is present and only renders.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "29c8eb3f92e5704a38463bbfa56b8e0a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>3</strong> envelope(s) discovered under <code>data/processed/</code>.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "7c1aa9a2a1d6743c82ff797e01e6642e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"nightshift_v1\"><code>nightshift_v1</code></h3></span><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Night Shift melanoma drug-response predictions (v1, reasoning baseline): per-condition CTG % viability for A375 (BRAF-V600E) and LOXIMVI from judgment effect floors + a CTG-kinetics model. Predictions, not measurements.</span></span><marimo-ui-element object-id='PKri-0' random-id='77508a56-0f4c-2595-d04f-bf16768f7d3b'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;metric&#92;&quot;:&#92;&quot;tasks_submitted&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;11&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;A375_BRAF_dependency_chronos&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;-1.499971974&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;GDSC2_dabrafenib_AUC_A375&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;0.3476069243&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;GDSC2_dabrafenib_AUC_LOXIMVI&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;0.7615090419&#92;&quot;}]&quot;' data-total-rows='4' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='4' data-field-types='[[&quot;metric&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;value&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Files</strong> (22):</span>\n<ul>\n<li><code>data/processed/nightshift_v1/1.1/output.json</code></li>\n<li><code>data/processed/nightshift_v1/1.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/1.2/output.json</code></li>\n<li><code>data/processed/nightshift_v1/1.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/1.3/output.json</code></li>\n<li><code>data/processed/nightshift_v1/1.3/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/1.4/output.json</code></li>\n<li><code>data/processed/nightshift_v1/1.4/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/1.5/output.json</code></li>\n<li><code>data/processed/nightshift_v1/1.5/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/2.1/output.json</code></li>\n<li><code>data/processed/nightshift_v1/2.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/2.2/output.json</code></li>\n<li><code>data/processed/nightshift_v1/2.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/2.3/output.json</code></li>\n<li><code>data/processed/nightshift_v1/2.3/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/3.1/output.json</code></li>\n<li><code>data/processed/nightshift_v1/3.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/3.2/output.json</code></li>\n<li><code>data/processed/nightshift_v1/3.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v1/4.1/output.json</code></li>\n<li><code>data/processed/nightshift_v1/4.1/reasoning.md</code></li>\n</ul></span></div><div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"nightshift_v2\"><code>nightshift_v2</code></h3></span><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Night Shift melanoma drug-response predictions (v2, data-derived floors): per-condition CTG % viability for A375 and LOXIMVI, floors read from PRISM Secondary dose-level viability at the task dose. Predictions, not measurements.</span></span><marimo-ui-element object-id='PKri-1' random-id='1c12adb5-f402-0cd3-8a9b-fc5d6d47b37a'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;metric&#92;&quot;:&#92;&quot;tasks_submitted&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;11&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;drugs_with_prism_floors&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;11&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;drugs_judgment_fallback&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;1&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='3' data-field-types='[[&quot;metric&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;value&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Files</strong> (22):</span>\n<ul>\n<li><code>data/processed/nightshift_v2/1.1/output.json</code></li>\n<li><code>data/processed/nightshift_v2/1.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/1.2/output.json</code></li>\n<li><code>data/processed/nightshift_v2/1.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/1.3/output.json</code></li>\n<li><code>data/processed/nightshift_v2/1.3/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/1.4/output.json</code></li>\n<li><code>data/processed/nightshift_v2/1.4/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/1.5/output.json</code></li>\n<li><code>data/processed/nightshift_v2/1.5/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/2.1/output.json</code></li>\n<li><code>data/processed/nightshift_v2/2.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/2.2/output.json</code></li>\n<li><code>data/processed/nightshift_v2/2.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/2.3/output.json</code></li>\n<li><code>data/processed/nightshift_v2/2.3/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/3.1/output.json</code></li>\n<li><code>data/processed/nightshift_v2/3.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/3.2/output.json</code></li>\n<li><code>data/processed/nightshift_v2/3.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v2/4.1/output.json</code></li>\n<li><code>data/processed/nightshift_v2/4.1/reasoning.md</code></li>\n</ul></span></div><div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"nightshift_v3\"><code>nightshift_v3</code></h3></span><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Night Shift melanoma drug-response predictions (ChEMBL-calibrated): PRISM-measured floors slid to the exact task dose along a ChEMBL-IC50 Hill curve, with Task-3 1/3-dose retention from the same curve. Predictions, not measurements.</span></span><marimo-ui-element object-id='PKri-2' random-id='2b868c3c-1110-9580-3b5d-fae71e3f263f'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;metric&#92;&quot;:&#92;&quot;tasks_submitted&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;11&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;ic50_source&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;local ChEMBL 37 DB&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;trametinib_IC50_nM&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;10&#92;&quot;},{&#92;&quot;metric&#92;&quot;:&#92;&quot;binimetinib_IC50_nM&#92;&quot;,&#92;&quot;value&#92;&quot;:&#92;&quot;182.0&#92;&quot;}]&quot;' data-total-rows='4' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='4' data-field-types='[[&quot;metric&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;value&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>Files</strong> (22):</span>\n<ul>\n<li><code>data/processed/nightshift_v3/1.1/output.json</code></li>\n<li><code>data/processed/nightshift_v3/1.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/1.2/output.json</code></li>\n<li><code>data/processed/nightshift_v3/1.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/1.3/output.json</code></li>\n<li><code>data/processed/nightshift_v3/1.3/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/1.4/output.json</code></li>\n<li><code>data/processed/nightshift_v3/1.4/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/1.5/output.json</code></li>\n<li><code>data/processed/nightshift_v3/1.5/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/2.1/output.json</code></li>\n<li><code>data/processed/nightshift_v3/2.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/2.2/output.json</code></li>\n<li><code>data/processed/nightshift_v3/2.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/2.3/output.json</code></li>\n<li><code>data/processed/nightshift_v3/2.3/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/3.1/output.json</code></li>\n<li><code>data/processed/nightshift_v3/3.1/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/3.2/output.json</code></li>\n<li><code>data/processed/nightshift_v3/3.2/reasoning.md</code></li>\n<li><code>data/processed/nightshift_v3/4.1/output.json</code></li>\n<li><code>data/processed/nightshift_v3/4.1/reasoning.md</code></li>\n</ul></span></div></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "467646243b18b41321b399507b611aa5",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"consolidated-index\">Consolidated index</h2></span><marimo-ui-element object-id='Xref-0' random-id='b20cb67b-01de-02bf-7020-3d7449040cc4'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;analysis&#92;&quot;:&#92;&quot;nightshift_v1&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Night Shift melanoma drug-response predictions (v1, reasoning baseline): per-condition CTG % viability for A375 (BRAF-V600E) and LOXIMVI from judgment effect floors + a CTG-kinetics model. Predictions, not measurements.&#92;&quot;,&#92;&quot;state&#92;&quot;:&#92;&quot;complete&#92;&quot;,&#92;&quot;n_numbers&#92;&quot;:4,&#92;&quot;n_files&#92;&quot;:22,&#92;&quot;summary_path&#92;&quot;:&#92;&quot;data/processed/nightshift_v1/summary.json&#92;&quot;},{&#92;&quot;analysis&#92;&quot;:&#92;&quot;nightshift_v2&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Night Shift melanoma drug-response predictions (v2, data-derived floors): per-condition CTG % viability for A375 and LOXIMVI, floors read from PRISM Secondary dose-level viability at the task dose. Predictions, not measurements.&#92;&quot;,&#92;&quot;state&#92;&quot;:&#92;&quot;complete&#92;&quot;,&#92;&quot;n_numbers&#92;&quot;:3,&#92;&quot;n_files&#92;&quot;:22,&#92;&quot;summary_path&#92;&quot;:&#92;&quot;data/processed/nightshift_v2/summary.json&#92;&quot;},{&#92;&quot;analysis&#92;&quot;:&#92;&quot;nightshift_v3&#92;&quot;,&#92;&quot;description&#92;&quot;:&#92;&quot;Night Shift melanoma drug-response predictions (ChEMBL-calibrated): PRISM-measured floors slid to the exact task dose along a ChEMBL-IC50 Hill curve, with Task-3 1/3-dose retention from the same curve. Predictions, not measurements.&#92;&quot;,&#92;&quot;state&#92;&quot;:&#92;&quot;complete&#92;&quot;,&#92;&quot;n_numbers&#92;&quot;:4,&#92;&quot;n_files&#92;&quot;:22,&#92;&quot;summary_path&#92;&quot;:&#92;&quot;data/processed/nightshift_v3/summary.json&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='3' data-field-types='[[&quot;analysis&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;description&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;state&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;n_numbers&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;n_files&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;summary_path&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-search='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Wrote <code>data/processed/index.json</code>, <code>data/processed/index.csv</code></span></span></div>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

@@ -38,3 +38,8 @@ does     = "Context expression (lineage or mutation) -> compare a gene's depende
 notebook = "nb05_association_query.py"
 helpers  = ["association_query", "association_table", "top_associations"]
 does     = "Gene dependency or drug slice -> precomputed Breadbox associations across modalities, ranked by q-value"
+
+[[vignette]]
+notebook = "index.py"
+helpers  = ["discover_envelopes", "normalize_files", "status_badge"]
+does     = "Discover every data/processed/**/summary.json envelope and render one block each (description, numbers, files); collate data/processed/index.{json,csv}. Computes nothing of its own"
