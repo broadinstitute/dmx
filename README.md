@@ -48,6 +48,7 @@ The skill stores are gitignored, so a fresh clone has only `skills-lock.json`; r
 
 ```bash
 npx skills@1.5.20 add carpenter-singh-lab/vignette-catalog-skills -s vignette-catalog-compose-notebook -s vignette-catalog-scaffold -a claude-code -a codex -y
+npx skills@1.5.20 add marimo-team/skills -s marimo-notebook -a claude-code -a codex -y
 npx skills@1.5.20 add marimo-team/marimo-pair -s marimo-pair -a claude-code -a codex -y
 ```
 
@@ -60,7 +61,6 @@ To run setup by hand:
 
 ```bash
 uv --version  # or: curl -LsSf https://astral.sh/uv/install.sh | sh
-npx skills add marimo-team/marimo-pair --agent claude-code -y
 uvx marimo edit --sandbox notebooks/nb01_orientation.py
 ```
 

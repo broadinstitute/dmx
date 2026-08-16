@@ -15,9 +15,11 @@ Add them explicitly instead, from the repo root, with `add --agent` (the only co
 
 ```bash
 npx skills@1.5.20 add carpenter-singh-lab/vignette-catalog-skills -s vignette-catalog-compose-notebook -s vignette-catalog-scaffold -a claude-code -a codex -y
+npx skills@1.5.20 add marimo-team/skills -s marimo-notebook -a claude-code -a codex -y
 npx skills@1.5.20 add marimo-team/marimo-pair -s marimo-pair -a claude-code -a codex -y
 ```
 
+Repository instructions, `catalog.toml`, and the compose notebook contract override generic `marimo-notebook` advice when they are more specific.
 This writes `.claude/skills/` and `.agents/`; both are gitignored.
 Do it before relying on the skills or the validation rule, and run `/reload-skills` (or restart an already-open session) so they register.
 (This instruction lives here, in a tracked file, on purpose: a skill cannot bootstrap its own install.)
