@@ -38,6 +38,7 @@ Each notebook is self-contained (it vendors the shared engine rather than import
 | `nightshift_v3_chembl_calibrated.py` | v2 floors slid to the exact task dose along a ChEMBL-IC50 Hill curve, with the 1/3-dose retention from the same curve | [![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/broadinstitute/dmx/blob/main/notebooks/nightshift_v3_chembl_calibrated.py) |
 
 Each writes its populated `output.json` + `reasoning.md` per task under `data/processed/nightshift_v*/`, with a `summary.json` envelope the index notebook can pick up.
+Some original task endpoints have since been retired, so the notebooks load one tracked v1 template set and regenerate every prediction field.
 
 ## Getting started
 
@@ -46,13 +47,14 @@ The skill stores are gitignored, so a fresh clone has only `skills-lock.json`; r
 `npx skills update` won't create Claude Code's `.claude/skills/` on a fresh clone, so add the skills explicitly:
 
 ```bash
-npx skills add carpenter-singh-lab/vignette-catalog-skills --agent claude-code -y
-npx skills add marimo-team/marimo-pair --agent claude-code -y
+npx skills@1.5.20 add carpenter-singh-lab/vignette-catalog-skills -s vignette-catalog-compose-notebook -s vignette-catalog-scaffold -a claude-code -a codex -y
+npx skills@1.5.20 add marimo-team/marimo-pair -s marimo-pair -a claude-code -a codex -y
 ```
 
 This writes `.claude/skills/` as well as `.agents/skills/` (both gitignored); if a session is already open, run `/reload-skills` or restart it so the new skills register.
 
-Then open Claude Code in this repo and ask to *get started* - the `vignette-catalog-setup` skill installs prereqs ([uv](https://docs.astral.sh/uv/) and the [marimo-pair](https://github.com/marimo-team/marimo-pair) skill), launches `nb01_orientation` in a live marimo kernel, and hands off to `vignette-catalog-compose-notebook` for the actual analysis.
+Then open Claude Code or Codex in this repo and ask to *get started*.
+The `vignette-catalog-compose-notebook` skill launches `nb01_orientation` in a live marimo kernel and handles later analysis in the same workflow.
 
 To run setup by hand:
 

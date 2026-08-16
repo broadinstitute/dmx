@@ -5,6 +5,8 @@ data/**
 # Index envelopes are kilobyte metadata the index notebook discovers - keep them
 # tracked even though the fetched/large data beside them is ignored.
 !data/processed/**/summary.json
+# Nightshift templates disappeared upstream; keep one local shape for offline reruns.
+!data/processed/nightshift_v1/*/output.json
 
 # marimo caches and exported session snapshots.
 # Ignore the cache tree by default, but DO track the session JSON snapshots: dmx
@@ -31,4 +33,3 @@ __pycache__/
 
 # Local cache
 .cache/
-.claude/.red-team-cache/

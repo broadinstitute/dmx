@@ -1,0 +1,32 @@
+{
+  "task": "2.1",
+  "description": "Rank all drug combinations on A375 cells after 48 hrs",
+  "cell_line": "A375",
+  "timepoint_h": 48,
+  "rankings": [
+    {
+      "condition": "Trametinib+Alpelisib",
+      "concentration": "10 nM + 5 uM",
+      "rank": 4,
+      "viability_pct": 43
+    },
+    {
+      "condition": "Dabrafenib+Trametinib",
+      "concentration": "100 nM + 10 nM",
+      "rank": 1,
+      "viability_pct": 24
+    },
+    {
+      "condition": "Encorafenib+Binimetinib",
+      "concentration": "100 nM + 100 nM",
+      "rank": 2,
+      "viability_pct": 27
+    },
+    {
+      "condition": "Vemurafenib+Cobimetinib",
+      "concentration": "1 uM + 100 nM",
+      "rank": 3,
+      "viability_pct": 29
+    }
+  ]
+}

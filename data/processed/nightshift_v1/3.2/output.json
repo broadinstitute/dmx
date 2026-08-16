@@ -1,0 +1,20 @@
+{
+  "task": "3.2",
+  "description": "Nominate the 3-drug combination with the greatest effect on A375 viability after 16 hrs",
+  "cell_line": "A375",
+  "timepoint_h": 16,
+  "dosing_rule": "each drug at 1/3 of its listed recommended concentration",
+  "nomination": {
+    "drugs": [
+      "Dabrafenib",
+      "Trametinib",
+      "Capivasertib"
+    ],
+    "concentrations": [
+      "33 nM",
+      "3 nM",
+      "1.67 uM"
+    ],
+    "viability_pct": 44
+  }
+}

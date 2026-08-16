@@ -34,7 +34,6 @@ with app.setup:
     A375 = "ACH-000219"
     LOXIMVI = "ACH-000750"
 
-    KARMAN = "https://mcp.karmanai.org"
     PRISM_SEC_AUC = "07b7bda9-ae00-43b3-bca1-336b9607f8f5"
     GDSC2_AUC = "2eac8e7b-beb4-48c1-b78f-c226723e54d7"
 
@@ -516,10 +515,8 @@ def rank_single_agents(line: str, timepoint_h: int, drugs: dict, floor_fn) -> li
 
 @app.function
 def fetch_template(task_id: str) -> dict:
-    """GET the benchmark's output template so we populate, never restructure."""
-    r = requests.get(f"{KARMAN}/tasks/{task_id}/output.json", headers={"Accept": "application/json"}, timeout=30)
-    r.raise_for_status()
-    return r.json()
+    """Load the committed benchmark template for a retired task."""
+    return json.loads((OUT_DIR / task_id / "output.json").read_text())
 
 
 @app.function

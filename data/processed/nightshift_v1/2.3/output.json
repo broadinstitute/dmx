@@ -1,0 +1,75 @@
+{
+  "task": "2.3",
+  "description": "Rank the effect of every drug-combination x cell line condition across A375 and LOXIMVI cells after 48 hrs",
+  "cell_lines": [
+    "A375",
+    "LOXIMVI"
+  ],
+  "timepoint_h": 48,
+  "rankings": [
+    {
+      "condition": "Trametinib+Alpelisib",
+      "concentration": "10 nM + 5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 4,
+      "viability_pct": 43
+    },
+    {
+      "condition": "Dabrafenib+Trametinib",
+      "concentration": "100 nM + 10 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 1,
+      "viability_pct": 24
+    },
+    {
+      "condition": "Encorafenib+Binimetinib",
+      "concentration": "100 nM + 100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 2,
+      "viability_pct": 27
+    },
+    {
+      "condition": "Vemurafenib+Cobimetinib",
+      "concentration": "1 uM + 100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 3,
+      "viability_pct": 29
+    },
+    {
+      "condition": "Trametinib+Alpelisib",
+      "concentration": "10 nM + 5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 5,
+      "viability_pct": 56
+    },
+    {
+      "condition": "Dabrafenib+Trametinib",
+      "concentration": "100 nM + 10 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 6,
+      "viability_pct": 64
+    },
+    {
+      "condition": "Encorafenib+Binimetinib",
+      "concentration": "100 nM + 100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 7,
+      "viability_pct": 65
+    },
+    {
+      "condition": "Vemurafenib+Cobimetinib",
+      "concentration": "1 uM + 100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 8,
+      "viability_pct": 70
+    }
+  ]
+}

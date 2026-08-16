@@ -1,0 +1,80 @@
+{
+  "task": "1.3",
+  "description": "Rank the effect of single agent compounds on A375 cells after 48 hrs",
+  "cell_line": "A375",
+  "timepoint_h": 48,
+  "rankings": [
+    {
+      "condition": "Vemurafenib",
+      "concentration": "1 uM",
+      "rank": 10,
+      "viability_pct": 67
+    },
+    {
+      "condition": "Dabrafenib",
+      "concentration": "100 nM",
+      "rank": 2,
+      "viability_pct": 57
+    },
+    {
+      "condition": "Encorafenib",
+      "concentration": "100 nM",
+      "rank": 5,
+      "viability_pct": 60
+    },
+    {
+      "condition": "Trametinib",
+      "concentration": "10 nM",
+      "rank": 3,
+      "viability_pct": 58
+    },
+    {
+      "condition": "Cobimetinib",
+      "concentration": "100 nM",
+      "rank": 4,
+      "viability_pct": 59
+    },
+    {
+      "condition": "Binimetinib",
+      "concentration": "100 nM",
+      "rank": 8,
+      "viability_pct": 63
+    },
+    {
+      "condition": "TAK-733",
+      "concentration": "30 nM",
+      "rank": 7,
+      "viability_pct": 62
+    },
+    {
+      "condition": "Regorafenib",
+      "concentration": "5 uM",
+      "rank": 9,
+      "viability_pct": 65
+    },
+    {
+      "condition": "Alpelisib",
+      "concentration": "5 uM",
+      "rank": 12,
+      "viability_pct": 88
+    },
+    {
+      "condition": "Capivasertib",
+      "concentration": "5 uM",
+      "rank": 11,
+      "viability_pct": 87
+    },
+    {
+      "condition": "Sapanisertib",
+      "concentration": "500 nM",
+      "rank": 6,
+      "viability_pct": 61
+    },
+    {
+      "condition": "Panobinostat",
+      "concentration": "50 nM",
+      "rank": 1,
+      "viability_pct": 38
+    }
+  ]
+}

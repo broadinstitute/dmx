@@ -1,0 +1,32 @@
+{
+  "task": "2.2",
+  "description": "Rank all drug combinations on LOXIMVI cells after 48 hrs",
+  "cell_line": "LOXIMVI",
+  "timepoint_h": 48,
+  "rankings": [
+    {
+      "condition": "Trametinib+Alpelisib",
+      "concentration": "10 nM + 5 uM",
+      "rank": 1,
+      "viability_pct": 56
+    },
+    {
+      "condition": "Dabrafenib+Trametinib",
+      "concentration": "100 nM + 10 nM",
+      "rank": 2,
+      "viability_pct": 64
+    },
+    {
+      "condition": "Encorafenib+Binimetinib",
+      "concentration": "100 nM + 100 nM",
+      "rank": 3,
+      "viability_pct": 65
+    },
+    {
+      "condition": "Vemurafenib+Cobimetinib",
+      "concentration": "1 uM + 100 nM",
+      "rank": 4,
+      "viability_pct": 70
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "task": "1.2",
+  "description": "Rank the effect of single agent compounds on LOXIMVI cells after 24 hrs",
+  "cell_line": "LOXIMVI",
+  "timepoint_h": 24,
+  "rankings": [
+    {
+      "condition": "Vemurafenib",
+      "concentration": "1 uM",
+      "rank": 12,
+      "viability_pct": 98
+    },
+    {
+      "condition": "Dabrafenib",
+      "concentration": "100 nM",
+      "rank": 10,
+      "viability_pct": 95
+    },
+    {
+      "condition": "Encorafenib",
+      "concentration": "100 nM",
+      "rank": 11,
+      "viability_pct": 95
+    },
+    {
+      "condition": "Trametinib",
+      "concentration": "10 nM",
+      "rank": 4,
+      "viability_pct": 88
+    },
+    {
+      "condition": "Cobimetinib",
+      "concentration": "100 nM",
+      "rank": 5,
+      "viability_pct": 89
+    },
+    {
+      "condition": "Binimetinib",
+      "concentration": "100 nM",
+      "rank": 6,
+      "viability_pct": 89
+    },
+    {
+      "condition": "TAK-733",
+      "concentration": "30 nM",
+      "rank": 7,
+      "viability_pct": 89
+    },
+    {
+      "condition": "Regorafenib",
+      "concentration": "5 uM",
+      "rank": 3,
+      "viability_pct": 81
+    },
+    {
+      "condition": "Alpelisib",
+      "concentration": "5 uM",
+      "rank": 9,
+      "viability_pct": 93
+    },
+    {
+      "condition": "Capivasertib",
+      "concentration": "5 uM",
+      "rank": 8,
+      "viability_pct": 92
+    },
+    {
+      "condition": "Sapanisertib",
+      "concentration": "500 nM",
+      "rank": 2,
+      "viability_pct": 78
+    },
+    {
+      "condition": "Panobinostat",
+      "concentration": "50 nM",
+      "rank": 1,
+      "viability_pct": 51
+    }
+  ]
+}

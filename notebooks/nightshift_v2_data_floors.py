@@ -32,7 +32,6 @@ with app.setup:
     REPO_DIR = NOTEBOOK_DIR.parent if NOTEBOOK_DIR.name == "notebooks" else NOTEBOOK_DIR
     OUT_DIR = REPO_DIR / "data" / "processed" / "nightshift_v2"
     BREADBOX = "https://depmap.org/portal/breadbox"
-    KARMAN = "https://mcp.karmanai.org"
     PRISM_VIAB = "576e1cb6-ac8d-4e29-bf15-0552c8665d72"
     GDSC2_AUC = "2eac8e7b-beb4-48c1-b78f-c226723e54d7"  # second screen, pulled live for the collision
     A375 = "ACH-000219"
@@ -490,10 +489,8 @@ def rank_single_agents(line: str, timepoint_h: int, drugs: dict, floor_fn) -> li
 
 @app.function
 def fetch_template(task_id: str) -> dict:
-    """GET the benchmark's output template so we populate, never restructure."""
-    r = requests.get(f"{KARMAN}/tasks/{task_id}/output.json", headers={"Accept": "application/json"}, timeout=30)
-    r.raise_for_status()
-    return r.json()
+    """Load the committed benchmark template for a retired task."""
+    return json.loads((REPO_DIR / "data" / "processed" / "nightshift_v1" / task_id / "output.json").read_text())
 
 
 @app.function

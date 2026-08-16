@@ -1,0 +1,398 @@
+{
+  "task": "1.5",
+  "description": "Rank the effect of every single-agent compound x cell line x timepoint condition across LOXIMVI and A375 cells at 24 and 48 hrs",
+  "cell_lines": [
+    "A375",
+    "LOXIMVI"
+  ],
+  "timepoints_h": [
+    24,
+    48
+  ],
+  "rankings": [
+    {
+      "condition": "Vemurafenib",
+      "concentration": "1 uM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 31,
+      "viability_pct": 84
+    },
+    {
+      "condition": "Dabrafenib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 21,
+      "viability_pct": 78
+    },
+    {
+      "condition": "Encorafenib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 26,
+      "viability_pct": 80
+    },
+    {
+      "condition": "Trametinib",
+      "concentration": "10 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 23,
+      "viability_pct": 79
+    },
+    {
+      "condition": "Cobimetinib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 24,
+      "viability_pct": 80
+    },
+    {
+      "condition": "Binimetinib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 28,
+      "viability_pct": 81
+    },
+    {
+      "condition": "TAK-733",
+      "concentration": "30 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 27,
+      "viability_pct": 81
+    },
+    {
+      "condition": "Regorafenib",
+      "concentration": "5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 25,
+      "viability_pct": 80
+    },
+    {
+      "condition": "Alpelisib",
+      "concentration": "5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 44,
+      "viability_pct": 94
+    },
+    {
+      "condition": "Capivasertib",
+      "concentration": "5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 42,
+      "viability_pct": 93
+    },
+    {
+      "condition": "Sapanisertib",
+      "concentration": "500 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 20,
+      "viability_pct": 78
+    },
+    {
+      "condition": "Panobinostat",
+      "concentration": "50 nM",
+      "cell_line": "A375",
+      "timepoint_h": 24,
+      "rank": 4,
+      "viability_pct": 54
+    },
+    {
+      "condition": "Vemurafenib",
+      "concentration": "1 uM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 14,
+      "viability_pct": 67
+    },
+    {
+      "condition": "Dabrafenib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 5,
+      "viability_pct": 57
+    },
+    {
+      "condition": "Encorafenib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 8,
+      "viability_pct": 60
+    },
+    {
+      "condition": "Trametinib",
+      "concentration": "10 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 6,
+      "viability_pct": 58
+    },
+    {
+      "condition": "Cobimetinib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 7,
+      "viability_pct": 59
+    },
+    {
+      "condition": "Binimetinib",
+      "concentration": "100 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 11,
+      "viability_pct": 63
+    },
+    {
+      "condition": "TAK-733",
+      "concentration": "30 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 10,
+      "viability_pct": 62
+    },
+    {
+      "condition": "Regorafenib",
+      "concentration": "5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 13,
+      "viability_pct": 65
+    },
+    {
+      "condition": "Alpelisib",
+      "concentration": "5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 34,
+      "viability_pct": 88
+    },
+    {
+      "condition": "Capivasertib",
+      "concentration": "5 uM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 32,
+      "viability_pct": 87
+    },
+    {
+      "condition": "Sapanisertib",
+      "concentration": "500 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 9,
+      "viability_pct": 61
+    },
+    {
+      "condition": "Panobinostat",
+      "concentration": "50 nM",
+      "cell_line": "A375",
+      "timepoint_h": 48,
+      "rank": 2,
+      "viability_pct": 38
+    },
+    {
+      "condition": "Vemurafenib",
+      "concentration": "1 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 48,
+      "viability_pct": 98
+    },
+    {
+      "condition": "Dabrafenib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 45,
+      "viability_pct": 95
+    },
+    {
+      "condition": "Encorafenib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 46,
+      "viability_pct": 95
+    },
+    {
+      "condition": "Trametinib",
+      "concentration": "10 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 35,
+      "viability_pct": 88
+    },
+    {
+      "condition": "Cobimetinib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 36,
+      "viability_pct": 89
+    },
+    {
+      "condition": "Binimetinib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 37,
+      "viability_pct": 89
+    },
+    {
+      "condition": "TAK-733",
+      "concentration": "30 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 38,
+      "viability_pct": 89
+    },
+    {
+      "condition": "Regorafenib",
+      "concentration": "5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 29,
+      "viability_pct": 81
+    },
+    {
+      "condition": "Alpelisib",
+      "concentration": "5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 43,
+      "viability_pct": 93
+    },
+    {
+      "condition": "Capivasertib",
+      "concentration": "5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 41,
+      "viability_pct": 92
+    },
+    {
+      "condition": "Sapanisertib",
+      "concentration": "500 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 22,
+      "viability_pct": 78
+    },
+    {
+      "condition": "Panobinostat",
+      "concentration": "50 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 24,
+      "rank": 3,
+      "viability_pct": 51
+    },
+    {
+      "condition": "Vemurafenib",
+      "concentration": "1 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 47,
+      "viability_pct": 95
+    },
+    {
+      "condition": "Dabrafenib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 39,
+      "viability_pct": 89
+    },
+    {
+      "condition": "Encorafenib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 40,
+      "viability_pct": 89
+    },
+    {
+      "condition": "Trametinib",
+      "concentration": "10 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 16,
+      "viability_pct": 76
+    },
+    {
+      "condition": "Cobimetinib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 17,
+      "viability_pct": 77
+    },
+    {
+      "condition": "Binimetinib",
+      "concentration": "100 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 18,
+      "viability_pct": 77
+    },
+    {
+      "condition": "TAK-733",
+      "concentration": "30 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 19,
+      "viability_pct": 77
+    },
+    {
+      "condition": "Regorafenib",
+      "concentration": "5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 15,
+      "viability_pct": 67
+    },
+    {
+      "condition": "Alpelisib",
+      "concentration": "5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 33,
+      "viability_pct": 87
+    },
+    {
+      "condition": "Capivasertib",
+      "concentration": "5 uM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 30,
+      "viability_pct": 83
+    },
+    {
+      "condition": "Sapanisertib",
+      "concentration": "500 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 12,
+      "viability_pct": 63
+    },
+    {
+      "condition": "Panobinostat",
+      "concentration": "50 nM",
+      "cell_line": "LOXIMVI",
+      "timepoint_h": 48,
+      "rank": 1,
+      "viability_pct": 34
+    }
+  ]
+}
